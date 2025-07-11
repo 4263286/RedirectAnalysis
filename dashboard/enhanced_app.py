@@ -685,206 +685,172 @@ def main():
                     
                     data = analysis_data['data'].copy()
                     if not data.empty:
-                        # PV、UV和浏览量三线图（双轴显示）
-                        if "点击量(PV)" in chart_options and "访客数(UV)" in chart_options:
-                            st.markdown("#### 📊 PV vs UV vs 浏览量趋势对比")
-                            
-                            # 准备数据用于三线图
-                            pv_data = data[['date', 'daily_clicks']].copy()
-                            pv_data['type'] = '点击量(PV)'
-                            pv_data['value'] = pv_data['daily_clicks']
-                            
-                            uv_data = data[['date', 'daily_visitors']].copy()
-                            uv_data['type'] = '访客数(UV)'
-                            uv_data['value'] = uv_data['daily_visitors']
-                            
-                            views_data = data[['date', 'daily_views']].copy()
-                            views_data['type'] = '浏览量(View)'
-                            views_data['value'] = views_data['daily_views']
-                            
-                            combined_data = pd.concat([pv_data, uv_data, views_data], ignore_index=True)
-                            
-                            import altair as alt
-                            base = alt.Chart(combined_data).encode(
-                                x=alt.X('date:T', title='日期', axis=alt.Axis(format='%Y-%m-%d'))
-                            )
-                            
-                            # 主Y轴：PV/UV
-                            pv_chart = base.transform_filter(alt.datum.type == '点击量(PV)').mark_line(
-                                color='#1f77b4', point=True, strokeWidth=2
-                            ).encode(
-                                y=alt.Y('value:Q', title='点击量/访客数',
-                                        scale=alt.Scale(domain=[0, max(1, combined_data[combined_data['type'].isin(['点击量(PV)','访客数(UV)'])]['value'].max() * 1.1)]),
-                                        axis=alt.Axis(format=',')),
-                                tooltip=[
-                                    alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
-                                    alt.Tooltip('value:Q', title='点击量(PV)', format=',.0f')
-                                ]
-                            )
-                            uv_chart = base.transform_filter(alt.datum.type == '访客数(UV)').mark_line(
-                                color='#ff7f0e', point=True, strokeWidth=2
-                            ).encode(
-                                y=alt.Y('value:Q', title='点击量/访客数',
-                                        scale=alt.Scale(domain=[0, max(1, combined_data[combined_data['type'].isin(['点击量(PV)','访客数(UV)'])]['value'].max() * 1.1)]),
-                                        axis=alt.Axis(format=',')),
-                                tooltip=[
-                                    alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
-                                    alt.Tooltip('value:Q', title='访客数(UV)', format=',.0f')
-                                ]
-                            )
-                            # 右侧Y2轴：浏览量
-                            view_chart = base.transform_filter(alt.datum.type == '浏览量(View)').mark_line(
-                                color='#2ca02c', point=True, strokeWidth=2
-                            ).encode(
-                                y2=alt.Y2('value:Q'),
-                                tooltip=[
-                                    alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
-                                    alt.Tooltip('value:Q', title='浏览量(View)', format=',.0f')
-                                ]
-                            )
-                            
-                            chart = alt.layer(pv_chart, uv_chart, view_chart).resolve_scale(
-                                y='independent'
-                            ).properties(
-                                title=f"📈 {link_url} - PV vs UV vs 浏览量趋势对比",
-                                height=400
-                            ).configure_axis(
-                                gridColor='#f0f0f0'
-                            ).configure_view(
-                                strokeWidth=0
-                            )
-                            
-                            st.altair_chart(chart, use_container_width=True)
-                            
-                            # 每日数据表格
-                            st.markdown("#### 📋 每日数据明细")
-                            
-                            # 准备表格数据
-                            table_data = data[['date', 'daily_clicks', 'daily_visitors', 'daily_views']].copy()
-                            table_data = table_data.rename(columns={
-                                'date': '日期',
-                                'daily_clicks': '点击量(PV)',
-                                'daily_visitors': '访客数(UV)',
-                                'daily_views': '浏览量'
-                            })
-                            
-                            # 格式化数字显示
-                            table_data['点击量(PV)'] = table_data['点击量(PV)'].apply(lambda x: f"{int(x):,}")
-                            table_data['访客数(UV)'] = table_data['访客数(UV)'].apply(lambda x: f"{int(x):,}")
-                            table_data['浏览量'] = table_data['浏览量'].apply(lambda x: f"{int(x):,}")
-                            
-                            # 显示表格
-                            st.dataframe(
-                                table_data,
-                                use_container_width=True,
-                                hide_index=True
-                            )
-                            
-                            # 添加表格说明
-                            st.markdown("""
-                            <div style='background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 10px;'>
-                            <small>
-                            📝 <strong>数据说明：</strong><br>
-                            • 点击量(PV)：基于不同 session_id 统计的每日点击次数<br>
-                            • 访客数(UV)：基于不同 visitor_id 统计的每日独立访客数<br>
-                            • 浏览量(View)：基于 view_diff 字段计算的每日浏览量增量<br>
-                            • 图表显示：三条折线在同一坐标系中对比，便于观察趋势关系<br>
-                            • 数据范围：当前筛选的日期范围
-                            </small>
-                            </div>
-                            """, unsafe_allow_html=True)
+                        # 只保留PV/UV两线趋势图
+                        pv_chart = base.transform_filter(alt.datum.type == '点击量(PV)').mark_line(
+                            color='#1f77b4', point=True, strokeWidth=2
+                        ).encode(
+                            y=alt.Y('value:Q', title='点击量/访客数',
+                                    scale=alt.Scale(domain=[0, max(1, combined_data[combined_data['type'].isin(['点击量(PV)','访客数(UV)'])]['value'].max() * 1.1)]),
+                                    axis=alt.Axis(format=',')),
+                            tooltip=[
+                                alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
+                                alt.Tooltip('value:Q', title='点击量(PV)', format=',.0f')
+                            ]
+                        )
+                        uv_chart = base.transform_filter(alt.datum.type == '访客数(UV)').mark_line(
+                            color='#ff7f0e', point=True, strokeWidth=2
+                        ).encode(
+                            y=alt.Y('value:Q', title='点击量/访客数',
+                                    scale=alt.Scale(domain=[0, max(1, combined_data[combined_data['type'].isin(['点击量(PV)','访客数(UV)'])]['value'].max() * 1.1)]),
+                                    axis=alt.Axis(format=',')),
+                            tooltip=[
+                                alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
+                                alt.Tooltip('value:Q', title='访客数(UV)', format=',.0f')
+                            ]
+                        )
+
+                        chart = alt.layer(pv_chart, uv_chart).resolve_scale(
+                            y='independent'
+                        ).properties(
+                            title=f"📈 {link_url} - PV vs UV 趋势对比",
+                            height=400
+                        ).configure_axis(
+                            gridColor='#f0f0f0'
+                        ).configure_view(
+                            strokeWidth=0
+                        )
                         
-                        # 浏览量图表
-                        if "浏览量" in chart_options:
-                            st.markdown("#### 📊 每日浏览量趋势")
-                            views_chart = alt.Chart(data).mark_line(
-                                color='#2ca02c', point=True, strokeWidth=2
-                            ).encode(
-                                x=alt.X('date:T', title='日期'),
-                                y=alt.Y('daily_views:Q', title='每日浏览量', 
-                                       scale=alt.Scale(domain=[0, data['daily_views'].max() * 1.1]),
-                                       axis=alt.Axis(format=',')),
-                                tooltip=[
-                                    alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
-                                    alt.Tooltip('daily_views:Q', title='浏览量', format=',.0f')
-                                ]
-                            ).properties(
-                                title=f"📊 {link_url} - 每日浏览量趋势",
-                                height=300
-                            )
-                            
-                            st.altair_chart(views_chart, use_container_width=True)
+                        st.altair_chart(chart, use_container_width=True)
                         
-                        # 转化率图表
-                        if "PV转化率" in chart_options or "UV转化率" in chart_options:
-                            st.markdown("#### 📊 转化率趋势")
-                            
-                            # 准备转化率数据
-                            conversion_data = data[['date', 'daily_pv_conversion_rate', 'daily_uv_conversion_rate']].copy()
-                            conversion_data = conversion_data.melt(
-                                id_vars=['date'], 
-                                value_vars=['daily_pv_conversion_rate', 'daily_uv_conversion_rate'],
-                                var_name='type', 
-                                value_name='rate'
-                            )
-                            conversion_data['type'] = conversion_data['type'].map({
-                                'daily_pv_conversion_rate': 'PV转化率',
-                                'daily_uv_conversion_rate': 'UV转化率'
-                            })
-                            
-                            # 筛选选中的转化率类型
-                            if "PV转化率" in chart_options and "UV转化率" in chart_options:
-                                filtered_conversion_data = conversion_data
-                            elif "PV转化率" in chart_options:
-                                filtered_conversion_data = conversion_data[conversion_data['type'] == 'PV转化率']
-                            else:
-                                filtered_conversion_data = conversion_data[conversion_data['type'] == 'UV转化率']
-                            
-                            conversion_chart = alt.Chart(filtered_conversion_data).mark_line(
-                                point=True, strokeWidth=2
-                            ).encode(
-                                x=alt.X('date:T', title='日期'),
-                                y=alt.Y('rate:Q', title='转化率 (%)', 
-                                       scale=alt.Scale(domain=[0, filtered_conversion_data['rate'].max() * 1.1])),
-                                color=alt.Color('type:N', title='转化率类型'),
-                                tooltip=[
-                                    alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
-                                    alt.Tooltip('rate:Q', title='转化率', format='.2f'),
-                                    alt.Tooltip('type:N', title='类型')
-                                ]
-                            ).properties(
-                                title=f"📊 {link_url} - 转化率趋势",
-                                height=300
-                            )
-                            
-                            st.altair_chart(conversion_chart, use_container_width=True)
+                        # 每日数据表格
+                        st.markdown("#### 📋 每日数据明细")
                         
-                        # 显示数据表格
-                        with st.expander(f"📋 {link_url} 详细数据"):
-                            # 重命名列用于显示
-                            display_data = data.copy()
-                            display_data = display_data.rename(columns={
-                                'daily_clicks': '每日点击量(PV)',
-                                'daily_visitors': '每日访客数(UV)',
-                                'daily_views': '每日浏览量',
-                                'daily_pv_conversion_rate': 'PV转化率(%)',
-                                'daily_uv_conversion_rate': 'UV转化率(%)'
-                            })
-                            
-                            st.dataframe(display_data, use_container_width=True)
-                            
-                            # 下载按钮
-                            csv_data = display_data.to_csv(index=False)
-                            st.download_button(
-                                label=f"📥 下载 {link_url} 数据",
-                                data=csv_data,
-                                file_name=f"link_conversion_{link_url.replace('https://', '').replace('/', '_')}_{datetime.now().strftime('%Y%m%d')}.csv",
-                                mime="text/csv"
-                            )
+                        # 准备表格数据
+                        table_data = data[['date', 'daily_clicks', 'daily_visitors', 'daily_views']].copy()
+                        table_data = table_data.rename(columns={
+                            'date': '日期',
+                            'daily_clicks': '点击量(PV)',
+                            'daily_visitors': '访客数(UV)',
+                            'daily_views': '浏览量'
+                        })
                         
-                        st.markdown("---")  # 分隔线
-                    else:
-                        st.warning(f"链接 {link_url} 暂无数据")
+                        # 格式化数字显示
+                        table_data['点击量(PV)'] = table_data['点击量(PV)'].apply(lambda x: f"{int(x):,}")
+                        table_data['访客数(UV)'] = table_data['访客数(UV)'].apply(lambda x: f"{int(x):,}")
+                        table_data['浏览量'] = table_data['浏览量'].apply(lambda x: f"{int(x):,}")
+                        
+                        # 显示表格
+                        st.dataframe(
+                            table_data,
+                            use_container_width=True,
+                            hide_index=True
+                        )
+                        
+                        # 添加表格说明
+                        st.markdown("""
+                        <div style='background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 10px;'>
+                        <small>
+                        📝 <strong>数据说明：</strong><br>
+                        • 点击量(PV)：基于不同 session_id 统计的每日点击次数<br>
+                        • 访客数(UV)：基于不同 visitor_id 统计的每日独立访客数<br>
+                        • 浏览量(View)：基于 view_diff 字段计算的每日浏览量增量<br>
+                        • 图表显示：三条折线在同一坐标系中对比，便于观察趋势关系<br>
+                        • 数据范围：当前筛选的日期范围
+                        </small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    # 浏览量图表
+                    if "浏览量" in chart_options:
+                        st.markdown("#### 📊 每日浏览量趋势")
+                        views_chart = alt.Chart(data).mark_line(
+                            color='#2ca02c', point=True, strokeWidth=2
+                        ).encode(
+                            x=alt.X('date:T', title='日期'),
+                            y=alt.Y('daily_views:Q', title='每日浏览量', 
+                                   scale=alt.Scale(domain=[0, data['daily_views'].max() * 1.1]),
+                                   axis=alt.Axis(format=',')),
+                            tooltip=[
+                                alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
+                                alt.Tooltip('daily_views:Q', title='浏览量', format=',.0f')
+                            ]
+                        ).properties(
+                            title=f"📊 {link_url} - 每日浏览量趋势",
+                            height=300
+                        )
+                        
+                        st.altair_chart(views_chart, use_container_width=True)
+                    
+                    # 转化率图表
+                    if "PV转化率" in chart_options or "UV转化率" in chart_options:
+                        st.markdown("#### 📊 转化率趋势")
+                        
+                        # 准备转化率数据
+                        conversion_data = data[['date', 'daily_pv_conversion_rate', 'daily_uv_conversion_rate']].copy()
+                        conversion_data = conversion_data.melt(
+                            id_vars=['date'], 
+                            value_vars=['daily_pv_conversion_rate', 'daily_uv_conversion_rate'],
+                            var_name='type', 
+                            value_name='rate'
+                        )
+                        conversion_data['type'] = conversion_data['type'].map({
+                            'daily_pv_conversion_rate': 'PV转化率',
+                            'daily_uv_conversion_rate': 'UV转化率'
+                        })
+                        
+                        # 筛选选中的转化率类型
+                        if "PV转化率" in chart_options and "UV转化率" in chart_options:
+                            filtered_conversion_data = conversion_data
+                        elif "PV转化率" in chart_options:
+                            filtered_conversion_data = conversion_data[conversion_data['type'] == 'PV转化率']
+                        else:
+                            filtered_conversion_data = conversion_data[conversion_data['type'] == 'UV转化率']
+                        
+                        conversion_chart = alt.Chart(filtered_conversion_data).mark_line(
+                            point=True, strokeWidth=2
+                        ).encode(
+                            x=alt.X('date:T', title='日期'),
+                            y=alt.Y('rate:Q', title='转化率 (%)', 
+                                   scale=alt.Scale(domain=[0, filtered_conversion_data['rate'].max() * 1.1])),
+                            color=alt.Color('type:N', title='转化率类型'),
+                            tooltip=[
+                                alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
+                                alt.Tooltip('rate:Q', title='转化率', format='.2f'),
+                                alt.Tooltip('type:N', title='类型')
+                            ]
+                        ).properties(
+                            title=f"📊 {link_url} - 转化率趋势",
+                            height=300
+                        )
+                        
+                        st.altair_chart(conversion_chart, use_container_width=True)
+                    
+                    # 显示数据表格
+                    with st.expander(f"📋 {link_url} 详细数据"):
+                        # 重命名列用于显示
+                        display_data = data.copy()
+                        display_data = display_data.rename(columns={
+                            'daily_clicks': '每日点击量(PV)',
+                            'daily_visitors': '每日访客数(UV)',
+                            'daily_views': '每日浏览量',
+                            'daily_pv_conversion_rate': 'PV转化率(%)',
+                            'daily_uv_conversion_rate': 'UV转化率(%)'
+                        })
+                        
+                        st.dataframe(display_data, use_container_width=True)
+                        
+                        # 下载按钮
+                        csv_data = display_data.to_csv(index=False)
+                        st.download_button(
+                            label=f"📥 下载 {link_url} 数据",
+                            data=csv_data,
+                            file_name=f"link_conversion_{link_url.replace('https://', '').replace('/', '_')}_{datetime.now().strftime('%Y%m%d')}.csv",
+                            mime="text/csv"
+                        )
+                    
+                    st.markdown("---")  # 分隔线
+                else:
+                    st.warning(f"链接 {link_url} 暂无数据")
             else:
                 st.info("暂无链接转化率分析数据")
         else:
