@@ -636,6 +636,9 @@ def main():
                     st.markdown(f"#### 🎯 {link_url}")
                     st.markdown(f"*目标分组: {analysis_data['target_group']}*")
                     
+                    # 确保data为DataFrame
+                    data = analysis_data['data'].copy()
+                    
                     # 显示统计信息卡片
                     col1, col2, col3, col4, col5 = st.columns(5)
                     with col1:
