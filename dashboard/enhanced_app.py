@@ -638,6 +638,14 @@ def main():
                     
                     # 确保data为DataFrame
                     data = analysis_data['data'].copy()
+                    required_cols = ['date', 'daily_clicks', 'daily_visitors', 'daily_views']
+                    if not isinstance(data, pd.DataFrame) or data.empty:
+                        st.error('数据为空或格式不正确，请检查数据源。')
+                        st.stop()
+                    missing_cols = [col for col in required_cols if col not in data.columns]
+                    if missing_cols:
+                        st.error(f'数据缺少必要字段: {missing_cols}')
+                        st.stop()
                     
                     # 显示统计信息卡片
                     col1, col2, col3, col4, col5 = st.columns(5)
@@ -687,6 +695,11 @@ def main():
                     import altair as alt
                     
                     # 构建PV/UV趋势图所需数据
+                    required_cols = ['date', 'daily_clicks']
+                    missing_cols = [col for col in required_cols if col not in data.columns]
+                    if missing_cols:
+                        st.error(f'数据缺少必要字段: {missing_cols}')
+                        st.stop()
                     pv_data = data[['date', 'daily_clicks']].copy()
                     pv_data['type'] = '点击量(PV)'
                     pv_data['value'] = pv_data['daily_clicks']
