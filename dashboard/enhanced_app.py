@@ -17,6 +17,14 @@ except Exception as e:
     st.write('Streamlit import error:', e)
 
 st.write('Current working dir:', os.getcwd())
+# 自动创建所需的空目录（如果不存在）
+for d in [
+    "data",
+    "data/redash_data",
+    "data/clicks",
+    "data/postingManager_data"
+]:
+    os.makedirs(d, exist_ok=True)
 try:
     st.write('Files in data/:', os.listdir('data'))
 except Exception as e:
@@ -89,15 +97,6 @@ import requests
 import os
 import pandas as pd
 
-# 自动创建所需的空目录（如果不存在）
-for d in [
-    "data",
-    "data/redash_data",
-    "data/clicks",
-    "data/postingManager_data"
-]:
-    os.makedirs(d, exist_ok=True)
-
 @st.cache_data
 def load_accounts_data():
     local_path = "data/postingManager_data/accounts_detail.xlsx"
@@ -134,9 +133,10 @@ def main():
     
     # 加载数据
     with st.spinner("正在加载数据..."):
-        processor = load_enhanced_data()
+        processor = EnhancedTikTokDataProcessor()
+        processor.merge_data()
     
-    if processor is None:
+    if processor.merged_df is None:
         st.error("❌ 数据加载失败，请检查数据文件是否存在")
         return
     
