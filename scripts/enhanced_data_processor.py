@@ -178,6 +178,12 @@ class EnhancedTikTokDataProcessor:
             else:
                 group_mapping = self.load_accounts_data()
             clicks_df = self.clicks_df if self.clicks_df is not None else self.load_clicks_data()
+            # 自动补齐 clicks_df 的 date 字段
+            if clicks_df is not None and 'date' not in clicks_df.columns:
+                if 'timestamp' in clicks_df.columns:
+                    clicks_df['date'] = pd.to_datetime(clicks_df['timestamp']).dt.date
+                else:
+                    raise KeyError("clicks_df 缺少 'date' 或 'timestamp' 字段")
             
             if redash_df is None or group_mapping is None:
                 return False
@@ -325,6 +331,12 @@ class EnhancedTikTokDataProcessor:
             return {}
         
         filtered_clicks = self.clicks_df.copy()
+        # 自动补齐 filtered_clicks 的 date 字段
+        if 'date' not in filtered_clicks.columns:
+            if 'timestamp' in filtered_clicks.columns:
+                filtered_clicks['date'] = pd.to_datetime(filtered_clicks['timestamp']).dt.date
+            else:
+                raise KeyError("clicks 数据缺少 'date' 或 'timestamp' 字段")
         # 保证 date 字段为 pd.Timestamp 类型
         filtered_clicks['date'] = pd.to_datetime(filtered_clicks['date'])
         # 日期筛选
