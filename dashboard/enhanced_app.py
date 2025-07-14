@@ -7,6 +7,32 @@ import sys
 import os
 import altair as alt
 
+# 环境和数据完整性调试输出
+st.write('Python version:', sys.version)
+try:
+    import streamlit
+    st.write('Streamlit version:', streamlit.__version__)
+except Exception as e:
+    st.write('Streamlit import error:', e)
+
+st.write('Current working dir:', os.getcwd())
+try:
+    st.write('Files in data/:', os.listdir('data'))
+except Exception as e:
+    st.write('data/ 目录读取失败:', e)
+try:
+    st.write('Files in data/redash_data/:', os.listdir('data/redash_data'))
+except Exception as e:
+    st.write('data/redash_data/ 目录读取失败:', e)
+try:
+    st.write('Files in data/clicks/:', os.listdir('data/clicks'))
+except Exception as e:
+    st.write('data/clicks/ 目录读取失败:', e)
+try:
+    st.write('Files in data/postingManager_data/:', os.listdir('data/postingManager_data'))
+except Exception as e:
+    st.write('data/postingManager_data/ 目录读取失败:', e)
+
 # 添加 scripts 目录到 Python 路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
