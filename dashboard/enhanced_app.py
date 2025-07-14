@@ -229,7 +229,6 @@ selected_groups = st.sidebar.multiselect(
 # 主要内容区域
 if processor.merged_df is None or processor.merged_df.empty:
     st.warning("所选筛选条件下没有数据")
-    return
 
 # 创建标签页
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
