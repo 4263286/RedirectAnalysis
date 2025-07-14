@@ -89,6 +89,15 @@ import requests
 import os
 import pandas as pd
 
+# 自动创建所需的空目录（如果不存在）
+for d in [
+    "data",
+    "data/redash_data",
+    "data/clicks",
+    "data/postingManager_data"
+]:
+    os.makedirs(d, exist_ok=True)
+
 @st.cache_data
 def load_accounts_data():
     local_path = "data/postingManager_data/accounts_detail.xlsx"
