@@ -162,7 +162,6 @@ processor.merge_data()
 
 if processor.merged_df is None:
     st.error("❌ 数据加载失败，请检查数据文件是否存在")
-    return
 
 # 获取数据摘要
 summary = processor.get_data_summary()
