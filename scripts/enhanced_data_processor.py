@@ -13,7 +13,10 @@ class EnhancedTikTokDataProcessor:
     def __init__(self, 
                  redash_data_dir: str = 'data/redash_data',
                  accounts_file_path: str = 'data/postingManager_data/accounts_detail.xlsx',
-                 clicks_data_dir: str = 'data/clicks'):
+                 clicks_data_dir: str = 'data/clicks',
+                 accounts_df: pd.DataFrame = None,
+                 redash_df: pd.DataFrame = None,
+                 clicks_df: pd.DataFrame = None):
         """
         初始化增强版数据处理器
         
@@ -29,8 +32,9 @@ class EnhancedTikTokDataProcessor:
         # 数据存储
         self.merged_df = None
         self.group_mapping = None
-        self.clicks_df = None
-        self.accounts_df = None
+        self.clicks_df = clicks_df
+        self.accounts_df = accounts_df
+        self.redash_df = redash_df
         
         # 链接到分组的映射
         self.link_group_mapping = {
@@ -162,10 +166,18 @@ class EnhancedTikTokDataProcessor:
         try:
             print("正在合并数据...")
             
-            # 加载数据
-            redash_df = self.load_latest_redash_data()
-            group_mapping = self.load_accounts_data()
-            clicks_df = self.load_clicks_data()
+            # 优先用传入的 DataFrame
+            redash_df = self.redash_df if self.redash_df is not None else self.load_latest_redash_data()
+            group_mapping = None
+            if self.accounts_df is not None:
+                accounts_df = self.accounts_df
+                group_mapping = accounts_df[['Tiktok ID', 'Groups']].drop_duplicates()
+                group_mapping = group_mapping.rename(columns={'Tiktok ID': 'user_id', 'Groups': 'group'})
+                group_mapping['user_id'] = group_mapping['user_id'].astype(str)
+                group_mapping['group'] = group_mapping['group'].fillna('Unknown')
+            else:
+                group_mapping = self.load_accounts_data()
+            clicks_df = self.clicks_df if self.clicks_df is not None else self.load_clicks_data()
             
             if redash_df is None or group_mapping is None:
                 return False
