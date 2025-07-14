@@ -331,11 +331,17 @@ class EnhancedTikTokDataProcessor:
             return {}
         
         filtered_clicks = self.clicks_df.copy()
-        # 自动补齐 filtered_clicks 的 date 字段
+        print("[DEBUG] filtered_clicks columns:", filtered_clicks.columns)
+        print("[DEBUG] filtered_clicks head:", filtered_clicks.head())
+        print("[DEBUG] filtered_clicks shape:", filtered_clicks.shape)
+        if filtered_clicks.empty:
+            print("[DEBUG] filtered_clicks is empty")
+            return {}
         if 'date' not in filtered_clicks.columns:
             if 'timestamp' in filtered_clicks.columns:
                 filtered_clicks['date'] = pd.to_datetime(filtered_clicks['timestamp']).dt.date
             else:
+                print("[DEBUG] filtered_clicks columns:", filtered_clicks.columns)
                 raise KeyError("clicks 数据缺少 'date' 或 'timestamp' 字段")
         # 保证 date 字段为 pd.Timestamp 类型
         filtered_clicks['date'] = pd.to_datetime(filtered_clicks['date'])
