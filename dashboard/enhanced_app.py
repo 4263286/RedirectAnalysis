@@ -101,25 +101,52 @@ import pandas as pd
 def load_accounts_data():
     local_path = "data/postingManager_data/accounts_detail.xlsx"
     if os.path.exists(local_path):
-        return pd.read_excel(local_path)
+        df = pd.read_excel(local_path)
+        st.write("[DEBUG] 本地 accounts_detail.xlsx 加载成功，shape:", df.shape)
+        return df
     url = st.secrets["ACCOUNTS_URL"]
     response = requests.get(url)
     tmp_path = "/tmp/accounts_detail.xlsx"
     with open(tmp_path, "wb") as f:
         f.write(response.content)
-    return pd.read_excel(tmp_path)
+    st.write(f"[DEBUG] 从 {url} 下载 accounts_detail.xlsx 到 {tmp_path}")
+    df = pd.read_excel(tmp_path)
+    st.write("[DEBUG] 云端 accounts_detail.xlsx 加载成功，shape:", df.shape)
+    return df
 
 @st.cache_data
 def load_redash_data():
     local_path = "data/redash_data/redash_data_2025-07-14.csv"
     if os.path.exists(local_path):
-        return pd.read_csv(local_path)
+        df = pd.read_csv(local_path)
+        st.write("[DEBUG] 本地 redash_data_2025-07-14.csv 加载成功，shape:", df.shape)
+        return df
     url = st.secrets["REDASH_URL"]
     response = requests.get(url)
     tmp_path = "/tmp/redash_data.csv"
     with open(tmp_path, "wb") as f:
         f.write(response.content)
-    return pd.read_csv(tmp_path)
+    st.write(f"[DEBUG] 从 {url} 下载 redash_data.csv 到 {tmp_path}")
+    df = pd.read_csv(tmp_path)
+    st.write("[DEBUG] 云端 redash_data.csv 加载成功，shape:", df.shape)
+    return df
+
+@st.cache_data
+def load_clicks_data():
+    local_path = "data/clicks/your_clicks_file.csv"
+    if os.path.exists(local_path):
+        df = pd.read_csv(local_path)
+        st.write("[DEBUG] 本地 clicks 加载成功，shape:", df.shape)
+        return df
+    url = st.secrets["CLICKS_URL"]
+    response = requests.get(url)
+    tmp_path = "/tmp/clicks.csv"
+    with open(tmp_path, "wb") as f:
+        f.write(response.content)
+    st.write(f"[DEBUG] 从 {url} 下载 clicks.csv 到 {tmp_path}")
+    df = pd.read_csv(tmp_path)
+    st.write("[DEBUG] 云端 clicks.csv 加载成功，shape:", df.shape)
+    return df
 
 # 用法示例
 accounts_df = load_accounts_data()
