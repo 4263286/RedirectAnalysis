@@ -6,6 +6,7 @@ import warnings
 import sys
 import os
 import altair as alt
+import requests
 
 # 环境和数据完整性调试输出
 st.write('Python version:', sys.version)
@@ -84,23 +85,38 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+import requests
+import os
+import pandas as pd
+
 @st.cache_data
-def load_enhanced_data():
-    """加载增强版数据"""
-    try:
-        # 创建增强版数据处理器
-        processor = EnhancedTikTokDataProcessor()
-        
-        # 合并数据
-        if processor.merge_data():
-            return processor
-        else:
-            st.error("数据合并失败")
-            return None
-        
-    except Exception as e:
-        st.error(f"数据加载错误: {str(e)}")
-        return None
+def load_accounts_data():
+    local_path = "data/postingManager_data/accounts_detail.xlsx"
+    if os.path.exists(local_path):
+        return pd.read_excel(local_path)
+    url = st.secrets["ACCOUNTS_URL"]
+    response = requests.get(url)
+    tmp_path = "/tmp/accounts_detail.xlsx"
+    with open(tmp_path, "wb") as f:
+        f.write(response.content)
+    return pd.read_excel(tmp_path)
+
+@st.cache_data
+def load_redash_data():
+    local_path = "data/redash_data/redash_data_2025-07-14.csv"
+    if os.path.exists(local_path):
+        return pd.read_csv(local_path)
+    url = st.secrets["REDASH_URL"]
+    response = requests.get(url)
+    tmp_path = "/tmp/redash_data.csv"
+    with open(tmp_path, "wb") as f:
+        f.write(response.content)
+    return pd.read_csv(tmp_path)
+
+# 用法示例
+accounts_df = load_accounts_data()
+redash_df = load_redash_data()
+# 你可以将 accounts_df 和 redash_df 传递给后续数据处理器或直接使用
 
 def main():
     """主函数"""
