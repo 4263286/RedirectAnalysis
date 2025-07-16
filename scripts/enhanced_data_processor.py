@@ -232,6 +232,29 @@ class EnhancedTikTokDataProcessor:
             st.write(f"[DEBUG] 开始合并，redash_df columns: {redash_df.columns.tolist()}")
             print(f"[DEBUG] group_mapping columns: {group_mapping.columns.tolist()}")
             st.write(f"[DEBUG] group_mapping columns: {group_mapping.columns.tolist()}")
+            
+            # 确保 redash_df 有正确的 date 列
+            if 'date' not in redash_df.columns:
+                print("[DEBUG] redash_df 缺少 'date' 列，尝试从其他列创建...")
+                st.write("[DEBUG] redash_df 缺少 'date' 列，尝试从其他列创建...")
+                if 'YMDdate' in redash_df.columns:
+                    redash_df['date'] = pd.to_datetime(redash_df['YMDdate'], errors='coerce')
+                    print("[DEBUG] 从 'YMDdate' 列创建 'date' 列")
+                    st.write("[DEBUG] 从 'YMDdate' 列创建 'date' 列")
+                else:
+                    print("[DEBUG] redash_df 缺少日期列，实际列: ", redash_df.columns.tolist())
+                    st.error("[DEBUG] redash_df 缺少日期列，实际列: " + str(redash_df.columns.tolist()))
+                    raise ValueError("redash_df 缺少日期列")
+            
+            # 确保 date 列是 datetime 类型
+            if not pd.api.types.is_datetime64_any_dtype(redash_df['date']):
+                redash_df['date'] = pd.to_datetime(redash_df['date'], errors='coerce')
+            
+            # 移除无效的日期行
+            redash_df = redash_df.dropna(subset=['date'])
+            print(f"[DEBUG] 处理日期后 redash_df shape: {redash_df.shape}")
+            st.write(f"[DEBUG] 处理日期后 redash_df shape: {redash_df.shape}")
+            
             # 强制类型转换
             if 'user_id' in redash_df.columns:
                 redash_df['user_id'] = redash_df['user_id'].astype(str)
@@ -554,21 +577,49 @@ class EnhancedTikTokDataProcessor:
         if self.merged_df is None:
             return {}
         
-        # 计算总浏览量
-        total_views = self.merged_df['view_count'].sum() if 'view_count' in self.merged_df.columns else 0
-        
-        summary = {
-            'total_records': len(self.merged_df),
-            'unique_accounts': self.merged_df['user_id'].nunique(),
-            'total_views': total_views,  # 替换分组数量为总浏览量
-            'date_range': {
-                'start': self.merged_df['date'].min(),
-                'end': self.merged_df['date'].max()
-            },
-            'matched_records': len(self.merged_df[self.merged_df['group'] != 'Unknown']),
-            'unmatched_records': len(self.merged_df[self.merged_df['group'] == 'Unknown']),
-            'match_rate': len(self.merged_df[self.merged_df['group'] != 'Unknown']) / len(self.merged_df) * 100
-        }
+        try:
+            import streamlit as st
+            st.write("[DEBUG] 开始获取数据摘要...")
+            st.write(f"[DEBUG] merged_df columns: {self.merged_df.columns.tolist()}")
+            st.write(f"[DEBUG] merged_df shape: {self.merged_df.shape}")
+            
+            # 检查必要的列是否存在
+            if 'date' not in self.merged_df.columns:
+                st.error(f"[DEBUG] merged_df 缺少 'date' 列，实际列: {self.merged_df.columns.tolist()}")
+                raise KeyError("merged_df 缺少 'date' 列")
+            
+            if 'user_id' not in self.merged_df.columns:
+                st.error(f"[DEBUG] merged_df 缺少 'user_id' 列，实际列: {self.merged_df.columns.tolist()}")
+                raise KeyError("merged_df 缺少 'user_id' 列")
+            
+            # 计算总浏览量
+            total_views = self.merged_df['view_count'].sum() if 'view_count' in self.merged_df.columns else 0
+            
+            # 获取日期范围
+            date_min = self.merged_df['date'].min()
+            date_max = self.merged_df['date'].max()
+            st.write(f"[DEBUG] 日期范围: {date_min} 到 {date_max}")
+            
+            summary = {
+                'total_records': len(self.merged_df),
+                'unique_accounts': self.merged_df['user_id'].nunique(),
+                'total_views': total_views,  # 替换分组数量为总浏览量
+                'date_range': {
+                    'start': date_min,
+                    'end': date_max
+                },
+                'matched_records': len(self.merged_df[self.merged_df['group'] != 'Unknown']),
+                'unmatched_records': len(self.merged_df[self.merged_df['group'] == 'Unknown']),
+                'match_rate': len(self.merged_df[self.merged_df['group'] != 'Unknown']) / len(self.merged_df) * 100
+            }
+            
+            st.write("[DEBUG] 数据摘要获取成功")
+            return summary
+            
+        except Exception as e:
+            st.error(f"[DEBUG] 获取数据摘要失败: {str(e)}")
+            print(f"[DEBUG] 获取数据摘要失败: {str(e)}")
+            return {}
         
         if self.clicks_df is not None:
             summary['clicks_data'] = {
