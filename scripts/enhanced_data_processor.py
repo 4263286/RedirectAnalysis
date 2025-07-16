@@ -260,9 +260,14 @@ class EnhancedTikTokDataProcessor:
             
             # 强制类型转换
             if 'user_id' in redash_df.columns:
+                # 确保 user_id 列的数据类型一致
+                print(f"[DEBUG] redash_df['user_id'] 原始 dtype: {redash_df['user_id'].dtype}")
+                st.write(f"[DEBUG] redash_df['user_id'] 原始 dtype: {redash_df['user_id'].dtype}")
+                
                 redash_df['user_id'] = redash_df['user_id'].astype(str)
-                print(f"[DEBUG] redash_df['user_id'] dtype: {redash_df['user_id'].dtype}")
-                st.write(f"[DEBUG] redash_df['user_id'] dtype: {redash_df['user_id'].dtype}")
+                print(f"[DEBUG] redash_df['user_id'] 转换后 dtype: {redash_df['user_id'].dtype}")
+                st.write(f"[DEBUG] redash_df['user_id'] 转换后 dtype: {redash_df['user_id'].dtype}")
+                
                 print(f"[DEBUG] redash_df['user_id'] sample: {redash_df['user_id'].unique()[:5]}")
                 st.write(f"[DEBUG] redash_df['user_id'] sample: {redash_df['user_id'].unique()[:5]}")
             else:

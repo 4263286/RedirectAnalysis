@@ -433,6 +433,14 @@ try:
             # 执行合并
             st.write("[DEBUG] 执行合并...")
             try:
+                # 确保 user_id 列的数据类型一致
+                st.write(f"[DEBUG] redash_df['user_id'] dtype: {redash_df['user_id'].dtype}")
+                st.write(f"[DEBUG] group_mapping['user_id'] dtype: {group_mapping['user_id'].dtype}")
+                
+                # 将 redash_df 的 user_id 转换为字符串
+                redash_df['user_id'] = redash_df['user_id'].astype(str)
+                st.write(f"[DEBUG] 转换后 redash_df['user_id'] dtype: {redash_df['user_id'].dtype}")
+                
                 merged_df = redash_df.merge(group_mapping, on='user_id', how='left')
                 st.write(f"[DEBUG] 合并成功，shape: {merged_df.shape}")
                 
