@@ -25,22 +25,25 @@ for d in [
     "data/postingManager_data"
 ]:
     os.makedirs(d, exist_ok=True)
+
+# 检查目录内容，使用更健壮的路径处理
+st.write(f'[DEBUG] 当前工作目录: {os.getcwd()}')
+st.write(f'[DEBUG] 当前目录内容: {os.listdir(".")}')
+
 try:
-    st.write('Files in data/:', os.listdir('data'))
+    if os.path.exists('data'):
+        st.write('Files in data/:', os.listdir('data'))
+        # 检查子目录
+        for subdir in ['redash_data', 'clicks', 'postingManager_data']:
+            subdir_path = os.path.join('data', subdir)
+            if os.path.exists(subdir_path):
+                st.write(f'Files in data/{subdir}/:', os.listdir(subdir_path))
+            else:
+                st.write(f'data/{subdir}/ 目录不存在')
+    else:
+        st.write('data/ 目录不存在')
 except Exception as e:
-    st.write('data/ 目录读取失败:', e)
-try:
-    st.write('Files in data/redash_data/:', os.listdir('data/redash_data'))
-except Exception as e:
-    st.write('data/redash_data/ 目录读取失败:', e)
-try:
-    st.write('Files in data/clicks/:', os.listdir('data/clicks'))
-except Exception as e:
-    st.write('data/clicks/ 目录读取失败:', e)
-try:
-    st.write('Files in data/postingManager_data/:', os.listdir('data/postingManager_data'))
-except Exception as e:
-    st.write('data/postingManager_data/ 目录读取失败:', e)
+    st.write('目录读取失败:', e)
 
 # 添加 scripts 目录到 Python 路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -100,11 +103,29 @@ import pandas as pd
 @st.cache_data
 def load_accounts_data():
     try:
-        local_path = "data/postingManager_data/accounts_detail.xlsx"
-        if os.path.exists(local_path):
-            df = pd.read_excel(local_path)
-            st.write("[DEBUG] 本地 accounts_detail.xlsx 加载成功，shape:", df.shape)
-            return df
+        # 尝试多个可能的路径
+        possible_paths = [
+            "data/postingManager_data/accounts_detail.xlsx",
+            "../data/postingManager_data/accounts_detail.xlsx",
+            "./data/postingManager_data/accounts_detail.xlsx",
+            os.path.join(os.getcwd(), "data", "postingManager_data", "accounts_detail.xlsx")
+        ]
+        
+        for local_path in possible_paths:
+            if os.path.exists(local_path):
+                df = pd.read_excel(local_path)
+                st.write(f"[DEBUG] 本地 accounts_detail.xlsx 加载成功，路径: {local_path}, shape: {df.shape}")
+                return df
+        
+        st.write(f"[DEBUG] 尝试的路径: {possible_paths}")
+        st.write(f"[DEBUG] 当前工作目录: {os.getcwd()}")
+        st.write(f"[DEBUG] 当前目录内容: {os.listdir('.')}")
+        if os.path.exists('data'):
+            st.write(f"[DEBUG] data目录内容: {os.listdir('data')}")
+        else:
+            st.write("[DEBUG] data目录不存在")
+        
+        # 如果本地文件不存在，尝试从云端加载
         
         # 尝试从云端加载
         try:
@@ -132,11 +153,28 @@ def load_accounts_data():
 @st.cache_data
 def load_redash_data():
     try:
-        local_path = "data/redash_data/redash_data_2025-07-14.csv"
-        if os.path.exists(local_path):
-            df = pd.read_csv(local_path)
-            st.write("[DEBUG] 本地 redash_data_2025-07-14.csv 加载成功，shape:", df.shape)
-            return df
+        # 尝试多个可能的路径
+        possible_paths = [
+            "data/redash_data/redash_data_2025-07-14.csv",
+            "../data/redash_data/redash_data_2025-07-14.csv",
+            "./data/redash_data/redash_data_2025-07-14.csv",
+            os.path.join(os.getcwd(), "data", "redash_data", "redash_data_2025-07-14.csv")
+        ]
+        
+        for local_path in possible_paths:
+            if os.path.exists(local_path):
+                df = pd.read_csv(local_path)
+                st.write(f"[DEBUG] 本地 redash_data_2025-07-14.csv 加载成功，路径: {local_path}, shape: {df.shape}")
+                return df
+        
+        st.write(f"[DEBUG] 尝试的路径: {possible_paths}")
+        st.write(f"[DEBUG] 当前工作目录: {os.getcwd()}")
+        if os.path.exists('data/redash_data'):
+            st.write(f"[DEBUG] data/redash_data目录内容: {os.listdir('data/redash_data')}")
+        else:
+            st.write("[DEBUG] data/redash_data目录不存在")
+        
+        # 如果本地文件不存在，尝试从云端加载
         
         # 尝试从云端加载
         try:
@@ -164,11 +202,30 @@ def load_redash_data():
 @st.cache_data
 def load_clicks_data():
     try:
-        local_path = "data/clicks/your_clicks_file.csv"
-        if os.path.exists(local_path):
-            df = pd.read_csv(local_path)
-            st.write("[DEBUG] 本地 clicks 加载成功，shape:", df.shape)
-            return df
+        # 尝试多个可能的路径和文件名
+        possible_paths = [
+            "data/clicks/20250714ClicksInsnap.csv",  # 根据图二显示的实际文件名
+            "data/clicks/20250711ClicksInsnap.csv",  # 另一个可能的文件
+            "data/clicks/your_clicks_file.csv",      # 原来的文件名
+            "../data/clicks/20250714ClicksInsnap.csv",
+            "./data/clicks/20250714ClicksInsnap.csv",
+            os.path.join(os.getcwd(), "data", "clicks", "20250714ClicksInsnap.csv")
+        ]
+        
+        for local_path in possible_paths:
+            if os.path.exists(local_path):
+                df = pd.read_csv(local_path)
+                st.write(f"[DEBUG] 本地 clicks 加载成功，路径: {local_path}, shape: {df.shape}")
+                return df
+        
+        st.write(f"[DEBUG] 尝试的路径: {possible_paths}")
+        st.write(f"[DEBUG] 当前工作目录: {os.getcwd()}")
+        if os.path.exists('data/clicks'):
+            st.write(f"[DEBUG] data/clicks目录内容: {os.listdir('data/clicks')}")
+        else:
+            st.write("[DEBUG] data/clicks目录不存在")
+        
+        # 如果本地文件不存在，尝试从云端加载
         
         # 尝试从云端加载
         try:
@@ -312,16 +369,22 @@ except Exception as e:
 # 合并数据
 try:
     st.write("[DEBUG] 开始调用 merge_data()...")
+    st.write(f"[DEBUG] processor.redash_df shape: {processor.redash_df.shape if processor.redash_df is not None else 'None'}")
+    st.write(f"[DEBUG] processor.accounts_df shape: {processor.accounts_df.shape if processor.accounts_df is not None else 'None'}")
+    st.write(f"[DEBUG] processor.clicks_df shape: {processor.clicks_df.shape if processor.clicks_df is not None else 'None'}")
+    
     merge_result = processor.merge_data()
     st.write(f"[DEBUG] merge_data() 返回值: {merge_result}")
     st.write(f"[DEBUG] merge_data() 完成，merged_df shape: {processor.merged_df.shape if processor.merged_df is not None else 'None'}")
     
     if not merge_result:
         st.error("❌ merge_data() 返回 False，合并失败")
+        st.write("[DEBUG] 请检查上面的调试信息，找出合并失败的具体原因")
         st.stop()
         
 except Exception as e:
     st.error(f"❌ 数据合并失败: {e}")
+    st.write(f"[DEBUG] 异常详情: {str(e)}")
     st.stop()
 
 if processor.merged_df is None or processor.merged_df.empty:

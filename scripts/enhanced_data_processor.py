@@ -168,6 +168,10 @@ class EnhancedTikTokDataProcessor:
             import streamlit as st
             st.write("[DEBUG] 正在合并数据...")
             
+            # 确保在云端也能看到调试信息
+            import sys
+            st.write(f"[DEBUG] Python路径: {sys.path[:3]}")  # 显示前3个路径
+            
             # 优先用传入的 DataFrame
             redash_df = self.redash_df if self.redash_df is not None else self.load_latest_redash_data()
             print(f"[DEBUG] redash_df shape: {redash_df.shape if redash_df is not None else 'None'}")
@@ -214,11 +218,13 @@ class EnhancedTikTokDataProcessor:
             
             if redash_df is None:
                 print("[DEBUG] redash_df 为 None，合并失败")
+                st.error("[DEBUG] redash_df 为 None，合并失败")
                 self.merged_df = None
                 return False
                 
             if group_mapping is None:
                 print("[DEBUG] group_mapping 为 None，合并失败")
+                st.error("[DEBUG] group_mapping 为 None，合并失败")
                 self.merged_df = None
                 return False
             
