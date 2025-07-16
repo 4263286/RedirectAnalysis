@@ -151,6 +151,9 @@ st.header("📊 数据加载测试")
 try:
     accounts_df = load_accounts_data()
     st.write(f"[DEBUG] accounts_df shape: {accounts_df.shape if accounts_df is not None else 'None'}")
+    if accounts_df is not None:
+        st.write(f"[DEBUG] accounts_df columns: {accounts_df.columns.tolist()}")
+        st.write(f"[DEBUG] accounts_df head: {accounts_df.head()}")
 except Exception as e:
     st.error(f"❌ 账号数据加载失败: {e}")
     accounts_df = None
@@ -158,6 +161,9 @@ except Exception as e:
 try:
     redash_df = load_redash_data()
     st.write(f"[DEBUG] redash_df shape: {redash_df.shape if redash_df is not None else 'None'}")
+    if redash_df is not None:
+        st.write(f"[DEBUG] redash_df columns: {redash_df.columns.tolist()}")
+        st.write(f"[DEBUG] redash_df head: {redash_df.head()}")
 except Exception as e:
     st.error(f"❌ Redash数据加载失败: {e}")
     redash_df = None
@@ -165,6 +171,9 @@ except Exception as e:
 try:
     clicks_df = load_clicks_data()
     st.write(f"[DEBUG] clicks_df shape: {clicks_df.shape if clicks_df is not None else 'None'}")
+    if clicks_df is not None:
+        st.write(f"[DEBUG] clicks_df columns: {clicks_df.columns.tolist()}")
+        st.write(f"[DEBUG] clicks_df head: {clicks_df.head()}")
 except Exception as e:
     st.error(f"❌ 点击数据加载失败: {e}")
     clicks_df = None

@@ -197,6 +197,8 @@ def load_clicks_data():
 try:
     accounts_df = load_accounts_data()
     st.write(f"[DEBUG] accounts_df shape: {accounts_df.shape if accounts_df is not None else 'None'}")
+    if accounts_df is not None:
+        st.write(f"[DEBUG] accounts_df columns: {accounts_df.columns.tolist()}")
 except Exception as e:
     st.error(f"❌ 账号数据加载失败: {e}")
     accounts_df = None
@@ -204,6 +206,8 @@ except Exception as e:
 try:
     redash_df = load_redash_data()
     st.write(f"[DEBUG] redash_df shape: {redash_df.shape if redash_df is not None else 'None'}")
+    if redash_df is not None:
+        st.write(f"[DEBUG] redash_df columns: {redash_df.columns.tolist()}")
 except Exception as e:
     st.error(f"❌ Redash数据加载失败: {e}")
     redash_df = None
@@ -211,14 +215,87 @@ except Exception as e:
 try:
     clicks_df = load_clicks_data()
     st.write(f"[DEBUG] clicks_df shape: {clicks_df.shape if clicks_df is not None else 'None'}")
+    if clicks_df is not None:
+        st.write(f"[DEBUG] clicks_df columns: {clicks_df.columns.tolist()}")
 except Exception as e:
     st.error(f"❌ 点击数据加载失败: {e}")
     clicks_df = None
 
 # 检查数据是否都加载成功
 if accounts_df is None or redash_df is None or clicks_df is None:
-    st.error("❌ 部分数据加载失败，请检查数据文件是否存在")
-    st.stop()
+    st.warning("⚠️ 部分数据加载失败")
+    
+    # 检查是否在云端环境（通过检查是否有secrets来判断）
+    try:
+        # 尝试访问secrets，如果成功说明在云端
+        test_secret = st.secrets.get("ACCOUNTS_URL", None)
+        is_cloud = test_secret is not None
+    except:
+        is_cloud = False
+    
+    if is_cloud:
+        st.error("❌ 云端数据加载失败，请检查secrets配置和数据文件URL")
+        st.stop()
+    else:
+        st.info("💡 本地数据文件不存在，创建模拟数据进行演示")
+        
+        # 创建模拟数据
+        import numpy as np
+        from datetime import datetime, timedelta
+        
+        # 模拟 accounts 数据
+        mock_accounts_data = {
+            'Tiktok ID': [f'user_{i:03d}' for i in range(1, 21)],
+            'Groups': ['yujie_main_avatar'] * 10 + ['wan_produce101'] * 10,
+            'username': [f'user_{i:03d}' for i in range(1, 21)],
+            'follower_count': np.random.randint(1000, 100000, 20),
+            'like_count': np.random.randint(100, 10000, 20)
+        }
+        accounts_df = pd.DataFrame(mock_accounts_data)
+        
+        # 模拟 redash 数据
+        dates = pd.date_range(start='2025-01-01', end='2025-01-31', freq='D')
+        mock_redash_data = []
+        
+        for date in dates:
+            for user_id in mock_accounts_data['Tiktok ID']:
+                mock_redash_data.append({
+                    'date': date,
+                    'user_id': user_id,
+                    'view_count': np.random.randint(1000, 50000),
+                    'like_count': np.random.randint(100, 5000),
+                    'comment_count': np.random.randint(10, 500),
+                    'share_count': np.random.randint(5, 200),
+                    'post_count': np.random.randint(1, 10),
+                    'view_diff': np.random.randint(-1000, 5000),
+                    'like_diff': np.random.randint(-100, 500),
+                    'comment_diff': np.random.randint(-10, 50),
+                    'share_diff': np.random.randint(-5, 20),
+                    'post_diff': np.random.randint(-1, 3)
+                })
+        
+        redash_df = pd.DataFrame(mock_redash_data)
+        
+        # 模拟 clicks 数据
+        mock_clicks_data = []
+        for date in dates[:10]:  # 只创建前10天的点击数据
+            for _ in range(np.random.randint(50, 200)):  # 每天50-200次点击
+                mock_clicks_data.append({
+                    'date': date.date(),
+                    'timestamp': date,
+                    'session_id': f'session_{np.random.randint(1, 1000)}',
+                    'visitor_id': f'visitor_{np.random.randint(1, 500)}',
+                    'page_url': np.random.choice(['https://insnap.ai/videos', 'https://insnap.ai/zh/download']),
+                    'page_type': np.random.choice(['videos', 'download']),
+                    'view_diff': np.random.randint(1, 100)
+                })
+        
+        clicks_df = pd.DataFrame(mock_clicks_data)
+        
+        st.info("💡 使用模拟数据进行演示。请确保本地数据文件存在：")
+        st.info("📁 data/postingManager_data/accounts_detail.xlsx")
+        st.info("📁 data/redash_data/redash_data_2025-07-14.csv")
+        st.info("📁 data/clicks/your_clicks_file.csv")
 
 # 初始化数据处理器
 try:
