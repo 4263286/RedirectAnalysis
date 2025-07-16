@@ -383,10 +383,6 @@ class EnhancedVisualization:
                 title=f"{title} - 浏览量指标",
                 width='container',
                 height=300
-            ).configure_axis(
-                gridColor='#f0f0f0'
-            ).configure_view(
-                strokeWidth=0
             )
         else:
             view_chart = None
@@ -438,22 +434,30 @@ class EnhancedVisualization:
                 title=f"{title} - 互动指标（点赞、评论、分享）",
                 width='container',
                 height=300
-            ).configure_axis(
-                gridColor='#f0f0f0'
-            ).configure_view(
-                strokeWidth=0
             )
         else:
             other_chart = None
         
         # 如果两个图表都存在，垂直组合
         if view_chart and other_chart:
-            combined_chart = alt.vconcat(view_chart, other_chart, spacing=20)
+            combined_chart = alt.vconcat(view_chart, other_chart, spacing=20).configure_axis(
+                gridColor='#f0f0f0'
+            ).configure_view(
+                strokeWidth=0
+            )
             return combined_chart
         elif view_chart:
-            return view_chart
+            return view_chart.configure_axis(
+                gridColor='#f0f0f0'
+            ).configure_view(
+                strokeWidth=0
+            )
         elif other_chart:
-            return other_chart
+            return other_chart.configure_axis(
+                gridColor='#f0f0f0'
+            ).configure_view(
+                strokeWidth=0
+            )
         else:
             return alt.Chart(pd.DataFrame()).mark_text(text="无数据").properties(title=title)
     
