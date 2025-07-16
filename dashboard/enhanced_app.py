@@ -373,18 +373,32 @@ try:
     st.write(f"[DEBUG] processor.accounts_df shape: {processor.accounts_df.shape if processor.accounts_df is not None else 'None'}")
     st.write(f"[DEBUG] processor.clicks_df shape: {processor.clicks_df.shape if processor.clicks_df is not None else 'None'}")
     
+    # 强制刷新输出
+    st.write("[DEBUG] 即将调用 merge_data()，请等待...")
+    
     merge_result = processor.merge_data()
+    
     st.write(f"[DEBUG] merge_data() 返回值: {merge_result}")
     st.write(f"[DEBUG] merge_data() 完成，merged_df shape: {processor.merged_df.shape if processor.merged_df is not None else 'None'}")
     
     if not merge_result:
         st.error("❌ merge_data() 返回 False，合并失败")
         st.write("[DEBUG] 请检查上面的调试信息，找出合并失败的具体原因")
+        
+        # 尝试获取更多调试信息
+        st.write("[DEBUG] 尝试检查 processor 状态...")
+        st.write(f"[DEBUG] processor.redash_df 是否为 None: {processor.redash_df is None}")
+        st.write(f"[DEBUG] processor.accounts_df 是否为 None: {processor.accounts_df is None}")
+        st.write(f"[DEBUG] processor.clicks_df 是否为 None: {processor.clicks_df is None}")
+        st.write(f"[DEBUG] processor.merged_df 是否为 None: {processor.merged_df is None}")
+        
         st.stop()
         
 except Exception as e:
     st.error(f"❌ 数据合并失败: {e}")
     st.write(f"[DEBUG] 异常详情: {str(e)}")
+    import traceback
+    st.error(f"[DEBUG] 完整错误堆栈: {traceback.format_exc()}")
     st.stop()
 
 if processor.merged_df is None or processor.merged_df.empty:

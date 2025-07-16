@@ -167,16 +167,19 @@ class EnhancedTikTokDataProcessor:
             print("正在合并数据...")
             import streamlit as st
             st.write("[DEBUG] 正在合并数据...")
+            st.write("[DEBUG] merge_data() 方法开始执行")
             
             # 确保在云端也能看到调试信息
             import sys
             st.write(f"[DEBUG] Python路径: {sys.path[:3]}")  # 显示前3个路径
             
             # 优先用传入的 DataFrame
+            st.write("[DEBUG] 开始获取 redash_df...")
             redash_df = self.redash_df if self.redash_df is not None else self.load_latest_redash_data()
             print(f"[DEBUG] redash_df shape: {redash_df.shape if redash_df is not None else 'None'}")
             st.write(f"[DEBUG] redash_df shape: {redash_df.shape if redash_df is not None else 'None'}")
             
+            st.write("[DEBUG] 开始处理 accounts_df...")
             group_mapping = None
             if self.accounts_df is not None:
                 print(f"[DEBUG] 使用传入的 accounts_df, shape: {self.accounts_df.shape}")
