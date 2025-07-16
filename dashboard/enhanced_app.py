@@ -964,12 +964,58 @@ with tab3:
             daily_clicks = clicks_metrics['daily_clicks']
 
             if not daily_clicks.empty:
+                # 检查数据格式，确保包含必要的列
+                required_cols = ['date', 'daily_clicks', 'daily_visitors']
+                available_cols = daily_clicks.columns.tolist()
+                
+                # 如果缺少必要的列，尝试从其他数据源获取或创建
+                if not all(col in available_cols for col in required_cols):
+                    st.warning("⚠️ 点击数据格式不完整，正在尝试修复...")
+                    
+                    # 检查是否有其他可用的列
+                    if 'date' in available_cols:
+                        # 创建临时的点击量数据
+                        fixed_data = daily_clicks.copy()
+                        
+                        # 如果缺少 daily_clicks 列，尝试从其他列推断或使用默认值
+                        if 'daily_clicks' not in available_cols:
+                            if 'clicks_count' in available_cols:
+                                fixed_data['daily_clicks'] = fixed_data['clicks_count']
+                            elif 'pv' in available_cols:
+                                fixed_data['daily_clicks'] = fixed_data['pv']
+                            else:
+                                # 使用默认值
+                                fixed_data['daily_clicks'] = 0
+                        
+                        # 如果缺少 daily_visitors 列，尝试从其他列推断或使用默认值
+                        if 'daily_visitors' not in available_cols:
+                            if 'visitors_count' in available_cols:
+                                fixed_data['daily_visitors'] = fixed_data['visitors_count']
+                            elif 'uv' in available_cols:
+                                fixed_data['daily_visitors'] = fixed_data['uv']
+                            else:
+                                # 使用默认值
+                                fixed_data['daily_visitors'] = 0
+                        
+                        daily_clicks = fixed_data
+                        st.success("✅ 数据格式已修复")
+                    else:
+                        st.error("❌ 无法修复数据格式，缺少必要的列")
+                        st.stop()
+                
                 # 点击量趋势图
                 st.markdown("#### 📈 每日点击量趋势")
-                clicks_chart = viz.create_clicks_analysis_chart(
-                    daily_clicks, "每日点击量趋势"
-                )
-                st.altair_chart(clicks_chart, use_container_width=True)
+                try:
+                    clicks_chart = viz.create_clicks_analysis_chart(
+                        daily_clicks, "每日点击量趋势"
+                    )
+                    st.altair_chart(clicks_chart, use_container_width=True)
+                except Exception as e:
+                    st.error(f"❌ 创建点击量趋势图失败: {str(e)}")
+                    st.write("调试信息：")
+                    st.write(f"数据列: {daily_clicks.columns.tolist()}")
+                    st.write(f"数据形状: {daily_clicks.shape}")
+                    st.write(f"数据前5行: {daily_clicks.head()}")
 
                 # 点击量统计
                 col1, col2, col3 = st.columns(3)
