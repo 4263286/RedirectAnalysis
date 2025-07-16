@@ -667,6 +667,22 @@ class EnhancedTikTokDataProcessor:
                 'match_rate': len(self.merged_df[self.merged_df['group'] != 'Unknown']) / len(self.merged_df) * 100
             }
             
+            # 添加点击数据
+            if self.clicks_df is not None:
+                summary['clicks_data'] = {
+                    'total_clicks': len(self.clicks_df),
+                    'unique_dates': self.clicks_df['date'].nunique() if 'date' in self.clicks_df.columns else 0,
+                    'date_range': {
+                        'start': self.clicks_df['date'].min() if 'date' in self.clicks_df.columns else None,
+                        'end': self.clicks_df['date'].max() if 'date' in self.clicks_df.columns else None
+                    }
+                }
+            
+            # 获取昨日对比数据
+            yesterday_comparison = self.get_yesterday_comparison()
+            if yesterday_comparison:
+                summary['yesterday_comparison'] = yesterday_comparison
+            
             st.write("[DEBUG] 数据摘要获取成功")
             return summary
             
@@ -675,23 +691,6 @@ class EnhancedTikTokDataProcessor:
             print(f"[DEBUG] 获取数据摘要失败: {str(e)}")
             return {}
         
-        if self.clicks_df is not None:
-            summary['clicks_data'] = {
-                'total_clicks': len(self.clicks_df),
-                'unique_dates': self.clicks_df['date'].nunique(),
-                'date_range': {
-                    'start': self.clicks_df['date'].min(),
-                    'end': self.clicks_df['date'].max()
-                }
-            }
-        
-        # 获取昨日对比数据
-        yesterday_comparison = self.get_yesterday_comparison()
-        if yesterday_comparison:
-            summary['yesterday_comparison'] = yesterday_comparison
-        
-        return summary
-    
     def get_yesterday_comparison(self) -> Dict:
         """
         获取昨日对比数据
