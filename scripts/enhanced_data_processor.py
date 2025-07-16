@@ -645,6 +645,9 @@ class EnhancedTikTokDataProcessor:
             # 计算总浏览量
             total_views = self.merged_df['view_count'].sum() if 'view_count' in self.merged_df.columns else 0
             
+            # 计算总发帖数
+            total_posts = self.merged_df['post_count'].sum() if 'post_count' in self.merged_df.columns else 0
+            
             # 获取日期范围
             date_min = self.merged_df['date'].min()
             date_max = self.merged_df['date'].max()
@@ -654,6 +657,7 @@ class EnhancedTikTokDataProcessor:
                 'total_records': len(self.merged_df),
                 'unique_accounts': self.merged_df['user_id'].nunique(),
                 'total_views': total_views,  # 替换分组数量为总浏览量
+                'total_posts': total_posts,  # 添加总发帖数
                 'date_range': {
                     'start': date_min,
                     'end': date_max
@@ -743,7 +747,19 @@ class EnhancedTikTokDataProcessor:
                 'pct': views_pct
             }
             
-            # 4. 总点击量对比
+            # 4. 总发帖数对比
+            current_posts = latest_data['post_count'].sum() if 'post_count' in latest_data.columns else 0
+            yesterday_posts = yesterday_data['post_count'].sum() if 'post_count' in yesterday_data.columns else 0
+            posts_diff = current_posts - yesterday_posts
+            posts_pct = (posts_diff / yesterday_posts * 100) if yesterday_posts > 0 else 0
+            comparison['total_posts'] = {
+                'current': current_posts,
+                'yesterday': yesterday_posts,
+                'diff': posts_diff,
+                'pct': posts_pct
+            }
+            
+            # 5. 总点击量对比
             if self.clicks_df is not None:
                 latest_clicks = self.clicks_df.copy()
                 if 'timestamp' in latest_clicks.columns:

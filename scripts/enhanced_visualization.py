@@ -473,28 +473,9 @@ class EnhancedVisualization:
         """
         html = "<div style='display: flex; justify-content: space-between; margin-bottom: 20px;'>"
         
-        # 数据概览区域 - 第一行
-        if 'total_records' in summary_data:
-            yesterday_info = ""
-            if 'yesterday_comparison' in summary_data and 'total_records' in summary_data['yesterday_comparison']:
-                comp = summary_data['yesterday_comparison']['total_records']
-                diff = comp['diff']
-                pct = comp['pct']
-                if diff > 0:
-                    yesterday_info = f"<div style='font-size: 12px; color: #28a745;'>🔺 较昨日 +{diff:,} ({pct:+.1f}%)</div>"
-                elif diff < 0:
-                    yesterday_info = f"<div style='font-size: 12px; color: #dc3545;'>🔻 较昨日 {diff:,} ({pct:+.1f}%)</div>"
-                else:
-                    yesterday_info = f"<div style='font-size: 12px; color: #6c757d;'>➖ 较昨日 0 (0.0%)</div>"
-            
-            html += (
-                "<div style='background-color: #f0f2f6; padding: 15px; border-radius: 8px; flex: 1; margin: 0 5px; text-align: center; display: inline-block;'>"
-                "<h3 style='margin: 0; color: #1f77b4;'>总记录数</h3>"
-                f"<p style='font-size: 24px; font-weight: bold; margin: 5px 0;'>{summary_data['total_records']:,}</p>"
-                f"{yesterday_info}"
-                "</div>"
-            )
+        # 数据概览区域 - 四个指标：账号数量、总浏览量、总发帖数、总点击数
         
+        # 1. 账号数量
         if 'unique_accounts' in summary_data:
             yesterday_info = ""
             if 'yesterday_comparison' in summary_data and 'unique_accounts' in summary_data['yesterday_comparison']:
@@ -510,12 +491,13 @@ class EnhancedVisualization:
             
             html += (
                 "<div style='background-color: #f0f2f6; padding: 15px; border-radius: 8px; flex: 1; margin: 0 5px; text-align: center; display: inline-block;'>"
-                "<h3 style='margin: 0; color: #ff7f0e;'>账号数量</h3>"
+                "<h3 style='margin: 0; color: #1f77b4;'>账号数量</h3>"
                 f"<p style='font-size: 24px; font-weight: bold; margin: 5px 0;'>{summary_data['unique_accounts']:,}</p>"
                 f"{yesterday_info}"
                 "</div>"
             )
         
+        # 2. 总浏览量
         if 'total_views' in summary_data:
             yesterday_info = ""
             if 'yesterday_comparison' in summary_data and 'total_views' in summary_data['yesterday_comparison']:
@@ -531,12 +513,35 @@ class EnhancedVisualization:
             
             html += (
                 "<div style='background-color: #f0f2f6; padding: 15px; border-radius: 8px; flex: 1; margin: 0 5px; text-align: center; display: inline-block;'>"
-                "<h3 style='margin: 0; color: #2ca02c;'>总浏览量</h3>"
+                "<h3 style='margin: 0; color: #ff7f0e;'>总浏览量</h3>"
                 f"<p style='font-size: 24px; font-weight: bold; margin: 5px 0;'>{summary_data['total_views']:,}</p>"
                 f"{yesterday_info}"
                 "</div>"
             )
         
+        # 3. 总发帖数
+        if 'total_posts' in summary_data:
+            yesterday_info = ""
+            if 'yesterday_comparison' in summary_data and 'total_posts' in summary_data['yesterday_comparison']:
+                comp = summary_data['yesterday_comparison']['total_posts']
+                diff = comp['diff']
+                pct = comp['pct']
+                if diff > 0:
+                    yesterday_info = f"<div style='font-size: 12px; color: #28a745;'>🔺 较昨日 +{diff:,} ({pct:+.1f}%)</div>"
+                elif diff < 0:
+                    yesterday_info = f"<div style='font-size: 12px; color: #dc3545;'>🔻 较昨日 {diff:,} ({pct:+.1f}%)</div>"
+                else:
+                    yesterday_info = f"<div style='font-size: 12px; color: #6c757d;'>➖ 较昨日 0 (0.0%)</div>"
+            
+            html += (
+                "<div style='background-color: #f0f2f6; padding: 15px; border-radius: 8px; flex: 1; margin: 0 5px; text-align: center; display: inline-block;'>"
+                "<h3 style='margin: 0; color: #2ca02c;'>总发帖数</h3>"
+                f"<p style='font-size: 24px; font-weight: bold; margin: 5px 0;'>{summary_data['total_posts']:,}</p>"
+                f"{yesterday_info}"
+                "</div>"
+            )
+        
+        # 4. 总点击数
         if 'clicks_data' in summary_data and 'total_clicks' in summary_data['clicks_data']:
             yesterday_info = ""
             if 'yesterday_comparison' in summary_data and 'total_clicks' in summary_data['yesterday_comparison']:
@@ -552,7 +557,7 @@ class EnhancedVisualization:
             
             html += (
                 "<div style='background-color: #f0f2f6; padding: 15px; border-radius: 8px; flex: 1; margin: 0 5px; text-align: center; display: inline-block;'>"
-                "<h3 style='margin: 0; color: #d62728;'>总点击量</h3>"
+                "<h3 style='margin: 0; color: #d62728;'>总点击数</h3>"
                 f"<p style='font-size: 24px; font-weight: bold; margin: 5px 0;'>{summary_data['clicks_data']['total_clicks']:,}</p>"
                 f"{yesterday_info}"
                 "</div>"
