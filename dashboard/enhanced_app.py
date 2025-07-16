@@ -7,6 +7,7 @@ import sys
 import os
 import altair as alt
 import requests
+import pickle
 
 # 环境和数据完整性调试输出
 st.write('Python version:', sys.version)
@@ -424,13 +425,23 @@ st.write(f"[DEBUG] st.session_state.merge_successful: {st.session_state.merge_su
 st.write(f"[DEBUG] st.session_state.merged_df is not None: {st.session_state.merged_df is not None}")
 st.write(f"[DEBUG] 条件结果: {st.session_state.merge_successful and st.session_state.merged_df is not None}")
 
-if st.session_state.merge_successful and st.session_state.merged_df is not None:
-    st.success("✅ 使用之前成功合并的数据")
-    processor.merged_df = st.session_state.merged_df
-    processor.group_mapping = st.session_state.group_mapping
-    processor.clicks_df = st.session_state.clicks_df
+MERGED_PATH = '/tmp/merged_result.parquet'
+GROUP_MAPPING_PATH = '/tmp/group_mapping.pkl'
+CLICKS_PATH = '/tmp/clicks_df.parquet'
+
+# 启动时优先加载持久化合并结果
+if os.path.exists(MERGED_PATH):
+    st.success("✅ 已加载持久化的合并结果，无需重新合并")
+    merged_df = pd.read_parquet(MERGED_PATH)
+    processor.merged_df = merged_df
+    # group_mapping
+    if os.path.exists(GROUP_MAPPING_PATH):
+        with open(GROUP_MAPPING_PATH, 'rb') as f:
+            processor.group_mapping = pickle.load(f)
+    # clicks_df
+    if os.path.exists(CLICKS_PATH):
+        processor.clicks_df = pd.read_parquet(CLICKS_PATH)
     merge_result = True
-    st.write(f"[DEBUG] 使用 session_state 数据，merged_df shape: {processor.merged_df.shape if processor.merged_df is not None else 'None'}")
 else:
     # 合并数据
     try:
@@ -515,6 +526,14 @@ else:
                     processor.group_mapping = group_mapping
                     processor.clicks_df = clicks_df
                     
+                    # 持久化保存
+                    merged_df.to_parquet('/tmp/merged_result.parquet')
+                    import pickle
+                    with open('/tmp/group_mapping.pkl', 'wb') as f:
+                        pickle.dump(group_mapping, f)
+                    if clicks_df is not None:
+                        clicks_df.to_parquet('/tmp/clicks_df.parquet')
+
                     st.success("✅ 直接合并测试成功！")
                     
                     # 使用 session_state 来标记合并成功
