@@ -269,14 +269,27 @@ class EnhancedTikTokDataProcessor:
             
             # 合并 redash 和 accounts 数据
             st.write("[DEBUG] 开始执行 merge 操作...")
-            merged_df = redash_df.merge(group_mapping, on='user_id', how='left')
-            print(f"[DEBUG] 合并后 shape: {merged_df.shape}")
-            st.write(f"[DEBUG] 合并后 shape: {merged_df.shape}")
-            print(f"[DEBUG] merged_df['group'] value_counts: {merged_df['group'].value_counts(dropna=False) if 'group' in merged_df.columns else '无group列'}")
-            st.write(f"[DEBUG] merged_df['group'] value_counts: {merged_df['group'].value_counts(dropna=False) if 'group' in merged_df.columns else '无group列'}")
-            print(f"[DEBUG] merged_df head:\n{merged_df.head()}")
-            st.write(f"[DEBUG] merged_df head:")
-            st.dataframe(merged_df.head())
+            print("[DEBUG] 准备执行 merge 操作...")
+            print(f"[DEBUG] redash_df shape: {redash_df.shape}")
+            print(f"[DEBUG] group_mapping shape: {group_mapping.shape}")
+            print(f"[DEBUG] redash_df['user_id'] 前5个值: {redash_df['user_id'].head().tolist()}")
+            print(f"[DEBUG] group_mapping['user_id'] 前5个值: {group_mapping['user_id'].head().tolist()}")
+            
+            try:
+                merged_df = redash_df.merge(group_mapping, on='user_id', how='left')
+                print(f"[DEBUG] 合并后 shape: {merged_df.shape}")
+                st.write(f"[DEBUG] 合并后 shape: {merged_df.shape}")
+                print(f"[DEBUG] merged_df columns: {merged_df.columns.tolist()}")
+                st.write(f"[DEBUG] merged_df columns: {merged_df.columns.tolist()}")
+                print(f"[DEBUG] merged_df['group'] value_counts: {merged_df['group'].value_counts(dropna=False) if 'group' in merged_df.columns else '无group列'}")
+                st.write(f"[DEBUG] merged_df['group'] value_counts: {merged_df['group'].value_counts(dropna=False) if 'group' in merged_df.columns else '无group列'}")
+                print(f"[DEBUG] merged_df head:\n{merged_df.head()}")
+                st.write(f"[DEBUG] merged_df head:")
+                st.dataframe(merged_df.head())
+            except Exception as merge_error:
+                print(f"[DEBUG] merge 操作失败: {str(merge_error)}")
+                st.error(f"[DEBUG] merge 操作失败: {str(merge_error)}")
+                raise merge_error
             
             # 强制统一分组字段名为 group
             if 'Groups' in merged_df.columns:
@@ -292,8 +305,13 @@ class EnhancedTikTokDataProcessor:
             return True
             
         except Exception as e:
-            print(f"❌ 数据合并失败: {str(e)}")
-            st.error(f"❌ 数据合并失败: {str(e)}")
+            import traceback
+            error_msg = f"❌ 数据合并失败: {str(e)}"
+            error_traceback = traceback.format_exc()
+            print(error_msg)
+            print(f"[DEBUG] 详细错误信息: {error_traceback}")
+            st.error(error_msg)
+            st.error(f"[DEBUG] 详细错误信息: {error_traceback}")
             self.merged_df = None
             return False
     
