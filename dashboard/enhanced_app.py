@@ -386,6 +386,16 @@ if accounts_df is None or redash_df is None or clicks_df is None:
         st.info("📁 data/redash_data/redash_data_2025-07-14.csv")
         st.info("📁 data/clicks/your_clicks_file.csv")
 
+# 初始化 session_state
+if 'merge_successful' not in st.session_state:
+    st.session_state.merge_successful = False
+if 'merged_df' not in st.session_state:
+    st.session_state.merged_df = None
+if 'group_mapping' not in st.session_state:
+    st.session_state.group_mapping = None
+if 'clicks_df' not in st.session_state:
+    st.session_state.clicks_df = None
+
 # 初始化数据处理器
 try:
     processor = EnhancedTikTokDataProcessor(
@@ -398,105 +408,131 @@ except Exception as e:
     st.error(f"❌ 数据处理器初始化失败: {e}")
     st.stop()
 
-# 合并数据
-try:
-    st.write("[DEBUG] 开始调用 merge_data()...")
-    st.write(f"[DEBUG] processor.redash_df shape: {processor.redash_df.shape if processor.redash_df is not None else 'None'}")
-    st.write(f"[DEBUG] processor.accounts_df shape: {processor.accounts_df.shape if processor.accounts_df is not None else 'None'}")
-    st.write(f"[DEBUG] processor.clicks_df shape: {processor.clicks_df.shape if processor.clicks_df is not None else 'None'}")
-    
-    # 强制刷新输出
-    st.write("[DEBUG] 即将调用 merge_data()，请等待...")
-    
-    merge_result = processor.merge_data()
-    
-    st.write(f"[DEBUG] merge_data() 返回值: {merge_result}")
-    st.write(f"[DEBUG] merge_data() 完成，merged_df shape: {processor.merged_df.shape if processor.merged_df is not None else 'None'}")
-    
-    if not merge_result:
-        st.error("❌ merge_data() 返回 False，合并失败")
-        st.write("[DEBUG] 请检查上面的调试信息，找出合并失败的具体原因")
+# 检查是否之前已经成功合并
+if st.session_state.merge_successful and st.session_state.merged_df is not None:
+    st.success("✅ 使用之前成功合并的数据")
+    processor.merged_df = st.session_state.merged_df
+    processor.group_mapping = st.session_state.group_mapping
+    processor.clicks_df = st.session_state.clicks_df
+    merge_result = True
+    st.write(f"[DEBUG] 使用 session_state 数据，merged_df shape: {processor.merged_df.shape if processor.merged_df is not None else 'None'}")
+else:
+    # 合并数据
+    try:
+        st.write("[DEBUG] 开始调用 merge_data()...")
+        st.write(f"[DEBUG] processor.redash_df shape: {processor.redash_df.shape if processor.redash_df is not None else 'None'}")
+        st.write(f"[DEBUG] processor.accounts_df shape: {processor.accounts_df.shape if processor.accounts_df is not None else 'None'}")
+        st.write(f"[DEBUG] processor.clicks_df shape: {processor.clicks_df.shape if processor.clicks_df is not None else 'None'}")
         
-        # 尝试获取更多调试信息
-        st.write("[DEBUG] 尝试检查 processor 状态...")
-        st.write(f"[DEBUG] processor.redash_df 是否为 None: {processor.redash_df is None}")
-        st.write(f"[DEBUG] processor.accounts_df 是否为 None: {processor.accounts_df is None}")
-        st.write(f"[DEBUG] processor.clicks_df 是否为 None: {processor.clicks_df is None}")
-        st.write(f"[DEBUG] processor.merged_df 是否为 None: {processor.merged_df is None}")
+        # 强制刷新输出
+        st.write("[DEBUG] 即将调用 merge_data()，请等待...")
         
-        # 提供直接测试选项
-        st.write("### 🔧 调试选项")
-        if st.button("运行直接合并测试"):
-            st.write("### 🔄 直接测试合并逻辑")
-            
-            # 获取数据
-            redash_df = processor.redash_df
-            accounts_df = processor.accounts_df
-            clicks_df = processor.clicks_df
-            
-            if redash_df is None or accounts_df is None:
-                st.error("❌ 数据为 None，无法测试")
-                st.stop()
-            
-            # 创建 group_mapping
-            st.write("[DEBUG] 创建 group_mapping...")
-            try:
-                accounts_df['Tiktok ID'] = accounts_df['Tiktok ID'].astype(str)
-                group_mapping = accounts_df[['Tiktok ID', 'Groups']].drop_duplicates()
-                group_mapping = group_mapping.rename(columns={'Tiktok ID': 'user_id', 'Groups': 'group'})
-                group_mapping['user_id'] = group_mapping['user_id'].astype(str)
-                group_mapping['group'] = group_mapping['group'].fillna('Unknown')
-                st.write(f"[DEBUG] group_mapping shape: {group_mapping.shape}")
-            except Exception as e:
-                st.error(f"❌ 创建 group_mapping 失败: {str(e)}")
-                st.stop()
-            
-            # 处理日期列
-            st.write("[DEBUG] 处理日期列...")
-            try:
-                if 'date' not in redash_df.columns and 'YMDdate' in redash_df.columns:
-                    redash_df['date'] = pd.to_datetime(redash_df['YMDdate'], errors='coerce')
-                redash_df = redash_df.dropna(subset=['date'])
-                st.write(f"[DEBUG] 处理日期后 shape: {redash_df.shape}")
-            except Exception as e:
-                st.error(f"❌ 处理日期列失败: {str(e)}")
-                st.stop()
-            
-            # 执行合并
-            st.write("[DEBUG] 执行合并...")
-            try:
-                # 确保 user_id 列的数据类型一致
-                st.write(f"[DEBUG] redash_df['user_id'] dtype: {redash_df['user_id'].dtype}")
-                st.write(f"[DEBUG] group_mapping['user_id'] dtype: {group_mapping['user_id'].dtype}")
-                
-                # 将 redash_df 的 user_id 转换为字符串
-                redash_df['user_id'] = redash_df['user_id'].astype(str)
-                st.write(f"[DEBUG] 转换后 redash_df['user_id'] dtype: {redash_df['user_id'].dtype}")
-                
-                merged_df = redash_df.merge(group_mapping, on='user_id', how='left')
-                st.write(f"[DEBUG] 合并成功，shape: {merged_df.shape}")
-                
-                # 更新 processor
-                processor.merged_df = merged_df
-                processor.group_mapping = group_mapping
-                processor.clicks_df = clicks_df
-                
-                st.success("✅ 直接合并测试成功！")
-                st.rerun()
-                
-            except Exception as e:
-                st.error(f"❌ 合并失败: {str(e)}")
-                import traceback
-                st.error(f"详细错误: {traceback.format_exc()}")
+        merge_result = processor.merge_data()
         
+        st.write(f"[DEBUG] merge_data() 返回值: {merge_result}")
+        st.write(f"[DEBUG] merge_data() 完成，merged_df shape: {processor.merged_df.shape if processor.merged_df is not None else 'None'}")
+        
+        if not merge_result:
+            st.error("❌ merge_data() 返回 False，合并失败")
+            st.write("[DEBUG] 请检查上面的调试信息，找出合并失败的具体原因")
+            
+            # 尝试获取更多调试信息
+            st.write("[DEBUG] 尝试检查 processor 状态...")
+            st.write(f"[DEBUG] processor.redash_df 是否为 None: {processor.redash_df is None}")
+            st.write(f"[DEBUG] processor.accounts_df 是否为 None: {processor.accounts_df is None}")
+            st.write(f"[DEBUG] processor.clicks_df 是否为 None: {processor.clicks_df is None}")
+            st.write(f"[DEBUG] processor.merged_df 是否为 None: {processor.merged_df is None}")
+            
+            # 提供直接测试选项
+            st.write("### 🔧 调试选项")
+            if st.button("运行直接合并测试"):
+                st.write("### 🔄 直接测试合并逻辑")
+                
+                # 获取数据
+                redash_df = processor.redash_df
+                accounts_df = processor.accounts_df
+                clicks_df = processor.clicks_df
+                
+                if redash_df is None or accounts_df is None:
+                    st.error("❌ 数据为 None，无法测试")
+                    st.stop()
+                
+                # 创建 group_mapping
+                st.write("[DEBUG] 创建 group_mapping...")
+                try:
+                    accounts_df['Tiktok ID'] = accounts_df['Tiktok ID'].astype(str)
+                    group_mapping = accounts_df[['Tiktok ID', 'Groups']].drop_duplicates()
+                    group_mapping = group_mapping.rename(columns={'Tiktok ID': 'user_id', 'Groups': 'group'})
+                    group_mapping['user_id'] = group_mapping['user_id'].astype(str)
+                    group_mapping['group'] = group_mapping['group'].fillna('Unknown')
+                    st.write(f"[DEBUG] group_mapping shape: {group_mapping.shape}")
+                except Exception as e:
+                    st.error(f"❌ 创建 group_mapping 失败: {str(e)}")
+                    st.stop()
+                
+                # 处理日期列
+                st.write("[DEBUG] 处理日期列...")
+                try:
+                    if 'date' not in redash_df.columns and 'YMDdate' in redash_df.columns:
+                        redash_df['date'] = pd.to_datetime(redash_df['YMDdate'], errors='coerce')
+                    redash_df = redash_df.dropna(subset=['date'])
+                    st.write(f"[DEBUG] 处理日期后 shape: {redash_df.shape}")
+                except Exception as e:
+                    st.error(f"❌ 处理日期列失败: {str(e)}")
+                    st.stop()
+                
+                # 执行合并
+                st.write("[DEBUG] 执行合并...")
+                try:
+                    # 确保 user_id 列的数据类型一致
+                    st.write(f"[DEBUG] redash_df['user_id'] dtype: {redash_df['user_id'].dtype}")
+                    st.write(f"[DEBUG] group_mapping['user_id'] dtype: {group_mapping['user_id'].dtype}")
+                    
+                    # 将 redash_df 的 user_id 转换为字符串
+                    redash_df['user_id'] = redash_df['user_id'].astype(str)
+                    st.write(f"[DEBUG] 转换后 redash_df['user_id'] dtype: {redash_df['user_id'].dtype}")
+                    
+                    merged_df = redash_df.merge(group_mapping, on='user_id', how='left')
+                    st.write(f"[DEBUG] 合并成功，shape: {merged_df.shape}")
+                    
+                    # 更新 processor
+                    processor.merged_df = merged_df
+                    processor.group_mapping = group_mapping
+                    processor.clicks_df = clicks_df
+                    
+                    st.success("✅ 直接合并测试成功！")
+                    
+                    # 使用 session_state 来标记合并成功
+                    st.session_state.merge_successful = True
+                    st.session_state.merged_df = merged_df
+                    st.session_state.group_mapping = group_mapping
+                    st.session_state.clicks_df = clicks_df
+                    
+                    st.success("🔄 数据已更新，请刷新页面查看完整仪表板")
+                    st.info("💡 提示：点击浏览器刷新按钮或按 F5 键刷新页面")
+                    
+                    # 显示合并后的数据摘要
+                    st.write("### 📊 合并后的数据摘要")
+                    st.write(f"- 总行数: {len(merged_df)}")
+                    st.write(f"- 日期范围: {merged_df['date'].min()} 到 {merged_df['date'].max()}")
+                    st.write(f"- 用户数: {merged_df['user_id'].nunique()}")
+                    st.write(f"- 分组数: {merged_df['group'].nunique()}")
+                    
+                    st.stop()
+            
+                except Exception as e:
+                    st.error(f"❌ 合并失败: {str(e)}")
+                    import traceback
+                    st.error(f"详细错误: {traceback.format_exc()}")
+            
+            st.stop()
+            
+    except Exception as e:
+        st.error(f"❌ 数据合并失败: {e}")
+        st.write(f"[DEBUG] 异常详情: {str(e)}")
+        import traceback
+        st.error(f"[DEBUG] 完整错误堆栈: {traceback.format_exc()}")
         st.stop()
-        
-except Exception as e:
-    st.error(f"❌ 数据合并失败: {e}")
-    st.write(f"[DEBUG] 异常详情: {str(e)}")
-    import traceback
-    st.error(f"[DEBUG] 完整错误堆栈: {traceback.format_exc()}")
-    st.stop()
 
 if processor.merged_df is None or processor.merged_df.empty:
     st.error("❌ 数据合并后为空，请检查数据文件内容")
