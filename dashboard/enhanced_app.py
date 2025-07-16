@@ -150,24 +150,41 @@ def load_accounts_data():
         st.error(f"账号数据加载失败: {e}")
         return None
 
-@st.cache_data
 def load_redash_data():
     try:
-        # 尝试多个可能的路径
-        possible_paths = [
-            "data/redash_data/redash_data_2025-07-14.csv",
-            "../data/redash_data/redash_data_2025-07-14.csv",
-            "./data/redash_data/redash_data_2025-07-14.csv",
-            os.path.join(os.getcwd(), "data", "redash_data", "redash_data_2025-07-14.csv")
-        ]
+        # 动态查找最新的 redash 数据文件
+        def find_latest_redash_file():
+            possible_dirs = [
+                "data/redash_data",
+                "../data/redash_data", 
+                "./data/redash_data",
+                os.path.join(os.getcwd(), "data", "redash_data")
+            ]
+            
+            for data_dir in possible_dirs:
+                if os.path.exists(data_dir):
+                    redash_files = [f for f in os.listdir(data_dir) 
+                                  if f.startswith('redash_data_') and f.endswith('.csv')]
+                    if redash_files:
+                        # 基于文件名中的日期选择最新文件
+                        def extract_date_from_filename(filename):
+                            try:
+                                date_str = filename.replace('redash_data_', '').replace('.csv', '')
+                                return pd.to_datetime(date_str)
+                            except:
+                                return pd.to_datetime('1900-01-01')
+                        
+                        latest_file = max(redash_files, key=extract_date_from_filename)
+                        return os.path.join(data_dir, latest_file)
+            return None
         
-        for local_path in possible_paths:
-            if os.path.exists(local_path):
-                df = pd.read_csv(local_path)
-                st.write(f"[DEBUG] 本地 redash_data_2025-07-14.csv 加载成功，路径: {local_path}, shape: {df.shape}")
-                return df
+        latest_file_path = find_latest_redash_file()
+        if latest_file_path:
+            df = pd.read_csv(latest_file_path)
+            st.write(f"[DEBUG] 本地 redash 数据加载成功，文件: {os.path.basename(latest_file_path)}, shape: {df.shape}")
+            return df
         
-        st.write(f"[DEBUG] 尝试的路径: {possible_paths}")
+        st.write(f"[DEBUG] 未找到本地 redash 数据文件")
         st.write(f"[DEBUG] 当前工作目录: {os.getcwd()}")
         if os.path.exists('data/redash_data'):
             st.write(f"[DEBUG] data/redash_data目录内容: {os.listdir('data/redash_data')}")
@@ -199,26 +216,41 @@ def load_redash_data():
         st.error(f"Redash数据加载失败: {e}")
         return None
 
-@st.cache_data
 def load_clicks_data():
     try:
-        # 尝试多个可能的路径和文件名
-        possible_paths = [
-            "data/clicks/20250714ClicksInsnap.csv",  # 根据图二显示的实际文件名
-            "data/clicks/20250711ClicksInsnap.csv",  # 另一个可能的文件
-            "data/clicks/your_clicks_file.csv",      # 原来的文件名
-            "../data/clicks/20250714ClicksInsnap.csv",
-            "./data/clicks/20250714ClicksInsnap.csv",
-            os.path.join(os.getcwd(), "data", "clicks", "20250714ClicksInsnap.csv")
-        ]
+        # 动态查找最新的 clicks 数据文件
+        def find_latest_clicks_file():
+            possible_dirs = [
+                "data/clicks",
+                "../data/clicks", 
+                "./data/clicks",
+                os.path.join(os.getcwd(), "data", "clicks")
+            ]
+            
+            for data_dir in possible_dirs:
+                if os.path.exists(data_dir):
+                    clicks_files = [f for f in os.listdir(data_dir) 
+                                  if f.endswith('.csv')]
+                    if clicks_files:
+                        # 基于文件名中的日期选择最新文件
+                        def extract_date_from_clicks_filename(filename):
+                            try:
+                                date_str = filename[:8]  # 取前8位作为日期
+                                return pd.to_datetime(date_str, format='%Y%m%d')
+                            except:
+                                return pd.to_datetime('1900-01-01')
+                        
+                        latest_file = max(clicks_files, key=extract_date_from_clicks_filename)
+                        return os.path.join(data_dir, latest_file)
+            return None
         
-        for local_path in possible_paths:
-            if os.path.exists(local_path):
-                df = pd.read_csv(local_path)
-                st.write(f"[DEBUG] 本地 clicks 加载成功，路径: {local_path}, shape: {df.shape}")
-                return df
+        latest_file_path = find_latest_clicks_file()
+        if latest_file_path:
+            df = pd.read_csv(latest_file_path)
+            st.write(f"[DEBUG] 本地 clicks 数据加载成功，文件: {os.path.basename(latest_file_path)}, shape: {df.shape}")
+            return df
         
-        st.write(f"[DEBUG] 尝试的路径: {possible_paths}")
+        st.write(f"[DEBUG] 未找到本地 clicks 数据文件")
         st.write(f"[DEBUG] 当前工作目录: {os.getcwd()}")
         if os.path.exists('data/clicks'):
             st.write(f"[DEBUG] data/clicks目录内容: {os.listdir('data/clicks')}")

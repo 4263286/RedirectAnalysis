@@ -56,8 +56,20 @@ class EnhancedTikTokDataProcessor:
             if not redash_files:
                 print(f"❌ 未找到 redash 数据文件在: {self.redash_data_dir}")
                 return None
-                
-            latest_file = max(redash_files, key=lambda x: os.path.getctime(os.path.join(self.redash_data_dir, x)))
+            
+            # 基于文件名中的日期选择最新文件
+            def extract_date_from_filename(filename):
+                try:
+                    # 从 redash_data_YYYY-MM-DD.csv 中提取日期
+                    date_str = filename.replace('redash_data_', '').replace('.csv', '')
+                    return pd.to_datetime(date_str)
+                except:
+                    # 如果无法解析日期，返回很早的日期
+                    return pd.to_datetime('1900-01-01')
+            
+            latest_file = max(redash_files, key=extract_date_from_filename)
+            print(f"[DEBUG] 找到的文件: {redash_files}")
+            print(f"[DEBUG] 选择的最新文件: {latest_file}")
             file_path = os.path.join(self.redash_data_dir, latest_file)
             
             print(f"正在加载 redash 数据: {latest_file}")
@@ -137,8 +149,20 @@ class EnhancedTikTokDataProcessor:
             if not clicks_files:
                 print(f"❌ 未找到 clicks 数据文件在: {self.clicks_data_dir}")
                 return None
-                
-            latest_file = max(clicks_files, key=lambda x: os.path.getctime(os.path.join(self.clicks_data_dir, x)))
+            
+            # 基于文件名中的日期选择最新文件
+            def extract_date_from_clicks_filename(filename):
+                try:
+                    # 从 YYYYMMDDClicksInsnap.csv 中提取日期
+                    date_str = filename[:8]  # 取前8位作为日期
+                    return pd.to_datetime(date_str, format='%Y%m%d')
+                except:
+                    # 如果无法解析日期，返回很早的日期
+                    return pd.to_datetime('1900-01-01')
+            
+            latest_file = max(clicks_files, key=extract_date_from_clicks_filename)
+            print(f"[DEBUG] 找到的 clicks 文件: {clicks_files}")
+            print(f"[DEBUG] 选择的最新 clicks 文件: {latest_file}")
             file_path = os.path.join(self.clicks_data_dir, latest_file)
             
             print(f"正在加载 clicks 数据: {latest_file}")
