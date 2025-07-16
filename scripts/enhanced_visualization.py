@@ -1,30 +1,19 @@
 import altair as alt
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Optional, Tuple
+from typing import List, Dict, Union
 import streamlit as st
 
 # 设置 Altair 主题
 alt.themes.enable('default')
 
 class EnhancedVisualization:
-    """增强版可视化工具类 - 使用 Altair 进行数据可视化"""
+    """
+    增强的可视化工具类
+    """
     
     def __init__(self):
-        """初始化可视化工具"""
-        self.color_scheme = {
-            'primary': '#1f77b4',
-            'secondary': '#ff7f0e',
-            'success': '#2ca02c',
-            'warning': '#d62728',
-            'info': '#9467bd',
-            'light': '#8c564b'
-        }
-        
-        self.metric_colors = [
-            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
-            '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
-        ]
+        pass
     
     def create_daily_trend_chart(self, df: pd.DataFrame, metric: str, 
                                 title: str, color: str = '#1f77b4') -> alt.Chart:
@@ -33,7 +22,7 @@ class EnhancedVisualization:
         
         Args:
             df (pd.DataFrame): 数据框
-            metric (str): 指标名称
+            metric (str): 指标列名
             title (str): 图表标题
             color (str): 线条颜色
         
@@ -49,48 +38,36 @@ class EnhancedVisualization:
         
         # 设置纵轴范围，避免从0开始，增强趋势可读性
         if min_value != max_value:
-            # 计算数据范围，设置适当的边距
             data_range = max_value - min_value
             y_min = max(0, min_value - data_range * 0.05)  # 最小不低于0
             y_max = max_value + data_range * 0.05
         else:
-            # 如果数据都相同，设置一个小的范围
             y_min = max(0, min_value * 0.95)
             y_max = max_value * 1.05
         
-        chart = alt.Chart(df).mark_line(
-            point=True,
-            color=color,
-            strokeWidth=3
-        ).encode(
-            x=alt.X('date:T', title='日期', axis=alt.Axis(format='%Y-%m-%d')),
-            y=alt.Y(f'{metric}:Q', 
-                   title=metric.replace('_', ' ').title(),
+        chart = alt.Chart(df).mark_line(point=True, color=color).encode(
+            x=alt.X('date:T', title='日期'),
+            y=alt.Y(f'{metric}:Q',
+                   title=f'每日{metric.replace("_", " ").title()}',
                    scale=alt.Scale(domain=[y_min, y_max], zero=False)),  # 设置自适应范围，不从0开始
             tooltip=[
                 alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
-                alt.Tooltip(f'{metric}:Q', title=metric.replace('_', ' ').title(), format=',.0f')
+                alt.Tooltip(f'{metric}:Q', title=metric.replace("_", " ").title(), format=',.0f')
             ]
         ).properties(
             title=title,
-            width='container',
             height=300
-        ).configure_axis(
-            gridColor='#f0f0f0'
-        ).configure_view(
-            strokeWidth=0
         )
-        
         return chart
     
     def create_group_comparison_chart(self, df: pd.DataFrame, metric: str,
                                     title: str) -> alt.Chart:
         """
-        创建分组对比条形图
+        创建分组对比图
         
         Args:
             df (pd.DataFrame): 数据框
-            metric (str): 指标名称
+            metric (str): 指标列名
             title (str): 图表标题
         
         Returns:
@@ -99,29 +76,34 @@ class EnhancedVisualization:
         if df.empty:
             return alt.Chart(pd.DataFrame()).mark_text(text="无数据").properties(title=title)
         
-        # 按分组聚合数据
-        group_data = df.groupby('group')[metric].sum().reset_index()
-        group_data = group_data.sort_values(metric, ascending=True)
+        # 计算数据范围，设置自适应纵轴
+        min_value = df[metric].min()
+        max_value = df[metric].max()
         
-        chart = alt.Chart(group_data).mark_bar(
-            color=self.color_scheme['primary']
-        ).encode(
-            x=alt.X(f'{metric}:Q', title=metric.replace('_', ' ').title()),
-            y=alt.Y('group:N', title='分组', sort='-x'),
+        # 设置纵轴范围，避免从0开始，增强趋势可读性
+        if min_value != max_value:
+            data_range = max_value - min_value
+            y_min = max(0, min_value - data_range * 0.05)  # 最小不低于0
+            y_max = max_value + data_range * 0.05
+        else:
+            y_min = max(0, min_value * 0.95)
+            y_max = max_value * 1.05
+        
+        chart = alt.Chart(df).mark_line(point=True).encode(
+            x=alt.X('date:T', title='日期'),
+            y=alt.Y(f'{metric}:Q',
+                   title=f'每日{metric.replace("_", " ").title()}',
+                   scale=alt.Scale(domain=[y_min, y_max], zero=False)),  # 设置自适应范围，不从0开始
+            color=alt.Color('group:N', title='分组'),
             tooltip=[
+                alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
                 alt.Tooltip('group:N', title='分组'),
-                alt.Tooltip(f'{metric}:Q', title=metric.replace('_', ' ').title(), format=',.0f')
+                alt.Tooltip(f'{metric}:Q', title=metric.replace("_", " ").title(), format=',.0f')
             ]
         ).properties(
             title=title,
-            width='container',
-            height=400
-        ).configure_axis(
-            gridColor='#f0f0f0'
-        ).configure_view(
-            strokeWidth=0
+            height=300
         )
-        
         return chart
     
     def create_stacked_area_chart(self, df: pd.DataFrame, metric: str,
@@ -131,7 +113,7 @@ class EnhancedVisualization:
         
         Args:
             df (pd.DataFrame): 数据框
-            metric (str): 指标名称
+            metric (str): 指标列名
             title (str): 图表标题
         
         Returns:
@@ -140,27 +122,19 @@ class EnhancedVisualization:
         if df.empty:
             return alt.Chart(pd.DataFrame()).mark_text(text="无数据").properties(title=title)
         
-        chart = alt.Chart(df).mark_area(
-            opacity=0.7
-        ).encode(
-            x=alt.X('date:T', title='日期', axis=alt.Axis(format='%Y-%m-%d')),
-            y=alt.Y(f'{metric}:Q', title=metric.replace('_', ' ').title(), stack='zero'),
-            color=alt.Color('group:N', title='分组', scale=alt.Scale(scheme='category10')),
+        chart = alt.Chart(df).mark_area().encode(
+            x=alt.X('date:T', title='日期'),
+            y=alt.Y(f'{metric}:Q', title=f'累计{metric.replace("_", " ").title()}'),
+            color=alt.Color('group:N', title='分组'),
             tooltip=[
                 alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
                 alt.Tooltip('group:N', title='分组'),
-                alt.Tooltip(f'{metric}:Q', title=metric.replace('_', ' ').title(), format=',.0f')
+                alt.Tooltip(f'{metric}:Q', title=metric.replace("_", " ").title(), format=',.0f')
             ]
         ).properties(
             title=title,
-            width='container',
-            height=400
-        ).configure_axis(
-            gridColor='#f0f0f0'
-        ).configure_view(
-            strokeWidth=0
+            height=300
         )
-        
         return chart
     
     def create_conversion_chart(self, df: pd.DataFrame, 
@@ -171,8 +145,8 @@ class EnhancedVisualization:
         
         Args:
             df (pd.DataFrame): 数据框
-            clicks_col (str): 点击量列名
-            views_col (str): 浏览量列名
+            clicks_col (str): 点击数列名
+            views_col (str): 浏览数列名
             title (str): 图表标题
         
         Returns:
@@ -183,16 +157,10 @@ class EnhancedVisualization:
         
         # 计算转化率
         df_copy = df.copy()
-        df_copy['conversion_rate'] = (
-            df_copy[clicks_col] / df_copy[views_col].replace(0, 1) * 100
-        )
+        df_copy['conversion_rate'] = (df_copy[clicks_col] / df_copy[views_col] * 100).fillna(0)
         
-        chart = alt.Chart(df_copy).mark_line(
-            point=True,
-            color=self.color_scheme['success'],
-            strokeWidth=3
-        ).encode(
-            x=alt.X('date:T', title='日期', axis=alt.Axis(format='%Y-%m-%d')),
+        chart = alt.Chart(df_copy).mark_line(point=True, color='#d62728').encode(
+            x=alt.X('date:T', title='日期'),
             y=alt.Y('conversion_rate:Q', title='转化率 (%)'),
             tooltip=[
                 alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
@@ -202,20 +170,14 @@ class EnhancedVisualization:
             ]
         ).properties(
             title=title,
-            width='container',
             height=300
-        ).configure_axis(
-            gridColor='#f0f0f0'
-        ).configure_view(
-            strokeWidth=0
         )
-        
         return chart
     
     def create_clicks_analysis_chart(self, df: pd.DataFrame,
                                    title: str) -> alt.Chart:
         """
-        创建点击量分析图表
+        创建点击分析图表
         
         Args:
             df (pd.DataFrame): 数据框
@@ -227,39 +189,43 @@ class EnhancedVisualization:
         if df.empty:
             return alt.Chart(pd.DataFrame()).mark_text(text="无数据").properties(title=title)
         
-        chart = alt.Chart(df).mark_line(
-            point=True,
-            color=self.color_scheme['secondary'],
-            strokeWidth=3
-        ).encode(
-            x=alt.X('date:T', title='日期', axis=alt.Axis(format='%Y-%m-%d')),
-            y=alt.Y('clicks_count:Q', title='点击量'),
+        # 准备数据
+        chart_data = df[['date', 'daily_clicks', 'daily_visitors']].copy()
+        chart_data = chart_data.melt(
+            id_vars=['date'],
+            value_vars=['daily_clicks', 'daily_visitors'],
+            var_name='type',
+            value_name='value'
+        )
+        chart_data['type'] = chart_data['type'].map({
+            'daily_clicks': '点击量(PV)',
+            'daily_visitors': '访客数(UV)'
+        })
+        
+        chart = alt.Chart(chart_data).mark_line(point=True).encode(
+            x=alt.X('date:T', title='日期'),
+            y=alt.Y('value:Q', title='数值'),
+            color=alt.Color('type:N', title='类型'),
             tooltip=[
                 alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
-                alt.Tooltip('clicks_count:Q', title='点击量', format=',.0f'),
-                alt.Tooltip('clicks_growth:Q', title='增长率', format='.2f')
+                alt.Tooltip('type:N', title='类型'),
+                alt.Tooltip('value:Q', title='数值', format=',.0f')
             ]
         ).properties(
             title=title,
-            width='container',
             height=300
-        ).configure_axis(
-            gridColor='#f0f0f0'
-        ).configure_view(
-            strokeWidth=0
         )
-        
         return chart
     
     def create_group_clicks_correlation(self, df: pd.DataFrame,
                                       clicks_col: str, metric_col: str,
                                       title: str) -> alt.Chart:
         """
-        创建分组点击相关性散点图
+        创建分组点击相关性图表
         
         Args:
             df (pd.DataFrame): 数据框
-            clicks_col (str): 点击量列名
+            clicks_col (str): 点击数列名
             metric_col (str): 指标列名
             title (str): 图表标题
         
@@ -269,36 +235,26 @@ class EnhancedVisualization:
         if df.empty:
             return alt.Chart(pd.DataFrame()).mark_text(text="无数据").properties(title=title)
         
-        chart = alt.Chart(df).mark_circle(
-            size=60,
-            opacity=0.7
-        ).encode(
+        chart = alt.Chart(df).mark_circle(size=60).encode(
             x=alt.X(f'{clicks_col}:Q', title='点击量'),
             y=alt.Y(f'{metric_col}:Q', title=metric_col.replace('_', ' ').title()),
-            color=alt.Color('group:N', title='分组', scale=alt.Scale(scheme='category10')),
+            color=alt.Color('group:N', title='分组'),
             tooltip=[
                 alt.Tooltip('group:N', title='分组'),
                 alt.Tooltip(f'{clicks_col}:Q', title='点击量', format=',.0f'),
-                alt.Tooltip(f'{metric_col}:Q', title=metric_col.replace('_', ' ').title(), format=',.0f'),
-                alt.Tooltip('date:T', title='日期', format='%Y-%m-%d')
+                alt.Tooltip(f'{metric_col}:Q', title=metric_col.replace('_', ' ').title(), format=',.0f')
             ]
         ).properties(
             title=title,
-            width='container',
-            height=400
-        ).configure_axis(
-            gridColor='#f0f0f0'
-        ).configure_view(
-            strokeWidth=0
+            height=300
         )
-        
         return chart
     
     def create_metrics_dashboard(self, daily_data: pd.DataFrame,
                                group_data: pd.DataFrame,
                                clicks_data: pd.DataFrame) -> alt.Chart:
         """
-        创建综合指标仪表板
+        创建指标仪表板
         
         Args:
             daily_data (pd.DataFrame): 每日数据
@@ -306,43 +262,20 @@ class EnhancedVisualization:
             clicks_data (pd.DataFrame): 点击数据
         
         Returns:
-            alt.Chart: 组合图表
+            alt.Chart: Altair 图表对象
         """
-        charts = []
-        
-        # 1. 每日趋势图
+        # 这里可以创建复杂的仪表板布局
+        # 暂时返回一个简单的图表
         if not daily_data.empty:
-            trend_chart = self.create_daily_trend_chart(
-                daily_data, 'view_count', '每日浏览量趋势'
-            )
-            charts.append(trend_chart)
-        
-        # 2. 分组对比图
-        if not group_data.empty:
-            group_chart = self.create_group_comparison_chart(
-                group_data, 'view_count', '分组浏览量对比'
-            )
-            charts.append(group_chart)
-        
-        # 3. 点击量分析图
-        if not clicks_data.empty:
-            clicks_chart = self.create_clicks_analysis_chart(
-                clicks_data, '每日点击量趋势'
-            )
-            charts.append(clicks_chart)
-        
-        # 组合图表
-        if charts:
-            combined_chart = alt.vconcat(*charts, spacing=20)
-            return combined_chart
+            return self.create_daily_trend_chart(daily_data, 'view_count', '指标仪表板')
         else:
-            return alt.Chart(pd.DataFrame()).mark_text(text="无数据")
+            return alt.Chart(pd.DataFrame()).mark_text(text="无数据").properties(title="指标仪表板")
     
     def create_efficiency_heatmap(self, df: pd.DataFrame,
                                  metrics: List[str],
                                  title: str) -> alt.Chart:
         """
-        创建效率指标热力图
+        创建效率热力图
         
         Args:
             df (pd.DataFrame): 数据框
@@ -368,31 +301,25 @@ class EnhancedVisualization:
         heatmap_df = pd.DataFrame(heatmap_data)
         
         chart = alt.Chart(heatmap_df).mark_rect().encode(
-            x=alt.X('date:T', title='日期', axis=alt.Axis(format='%Y-%m-%d')),
+            x=alt.X('date:T', title='日期'),
             y=alt.Y('metric:N', title='指标'),
             color=alt.Color('value:Q', title='数值', scale=alt.Scale(scheme='viridis')),
             tooltip=[
                 alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
                 alt.Tooltip('metric:N', title='指标'),
-                alt.Tooltip('value:Q', title='数值', format='.2f')
+                alt.Tooltip('value:Q', title='数值', format=',.0f')
             ]
         ).properties(
             title=title,
-            width='container',
             height=300
-        ).configure_axis(
-            gridColor='#f0f0f0'
-        ).configure_view(
-            strokeWidth=0
         )
-        
         return chart
     
     def create_multi_metric_comparison(self, df: pd.DataFrame,
                                      metrics: List[str],
-                                     title: str) -> alt.Chart:
+                                     title: str) -> Union[alt.Chart, alt.VConcatChart]:
         """
-        创建多指标对比图
+        创建多指标对比图 - 将浏览量和其他指标分开展示
         
         Args:
             df (pd.DataFrame): 数据框
@@ -405,61 +332,130 @@ class EnhancedVisualization:
         if df.empty:
             return alt.Chart(pd.DataFrame()).mark_text(text="无数据").properties(title=title)
         
-        # 准备多指标数据
-        multi_data = []
-        for _, row in df.iterrows():
-            for metric in metrics:
-                multi_data.append({
-                    'date': row['date'],
-                    'metric': metric.replace('_', ' ').title(),
-                    'value': row[metric]
-                })
+        # 分离浏览量和其他指标
+        view_metrics = [m for m in metrics if 'view' in m.lower()]
+        other_metrics = [m for m in metrics if 'view' not in m.lower()]
         
-        multi_df = pd.DataFrame(multi_data)
-        
-        # 计算所有指标的数据范围，设置自适应纵轴
-        all_values = multi_df['value'].dropna()
-        if not all_values.empty:
-            min_value = all_values.min()
-            max_value = all_values.max()
+        # 创建浏览量图表
+        if view_metrics:
+            view_data = []
+            for _, row in df.iterrows():
+                for metric in view_metrics:
+                    view_data.append({
+                        'date': row['date'],
+                        'metric': metric.replace('_', ' ').title(),
+                        'value': row[metric]
+                    })
             
-            # 设置纵轴范围，避免从0开始，增强趋势可读性
-            if min_value != max_value:
-                data_range = max_value - min_value
-                y_min = max(0, min_value - data_range * 0.05)  # 最小不低于0
-                y_max = max_value + data_range * 0.05
+            view_df = pd.DataFrame(view_data)
+            
+            # 计算浏览量数据范围
+            view_values = view_df['value'].dropna()
+            if not view_values.empty:
+                min_value = view_values.min()
+                max_value = view_values.max()
+                if min_value != max_value:
+                    data_range = max_value - min_value
+                    y_min = max(0, min_value - data_range * 0.05)
+                    y_max = max_value + data_range * 0.05
+                else:
+                    y_min = max(0, min_value * 0.95)
+                    y_max = max_value * 1.05
             else:
-                y_min = max(0, min_value * 0.95)
-                y_max = max_value * 1.05
+                y_min = 0
+                y_max = 100
+            
+            view_chart = alt.Chart(view_df).mark_line(
+                point=True,
+                strokeWidth=2
+            ).encode(
+                x=alt.X('date:T', title='日期', axis=alt.Axis(format='%Y-%m-%d')),
+                y=alt.Y('value:Q', 
+                       title='浏览量',
+                       scale=alt.Scale(domain=[y_min, y_max], zero=False)),
+                color=alt.Color('metric:N', title='指标', scale=alt.Scale(scheme='category10')),
+                tooltip=[
+                    alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
+                    alt.Tooltip('metric:N', title='指标'),
+                    alt.Tooltip('value:Q', title='数值', format=',.0f')
+                ]
+            ).properties(
+                title=f"{title} - 浏览量指标",
+                width='container',
+                height=300
+            ).configure_axis(
+                gridColor='#f0f0f0'
+            ).configure_view(
+                strokeWidth=0
+            )
         else:
-            y_min = 0
-            y_max = 100
+            view_chart = None
         
-        chart = alt.Chart(multi_df).mark_line(
-            point=True,
-            strokeWidth=2
-        ).encode(
-            x=alt.X('date:T', title='日期', axis=alt.Axis(format='%Y-%m-%d')),
-            y=alt.Y('value:Q', 
-                   title='数值',
-                   scale=alt.Scale(domain=[y_min, y_max], zero=False)),  # 设置自适应范围，不从0开始
-            color=alt.Color('metric:N', title='指标', scale=alt.Scale(scheme='category10')),
-            tooltip=[
-                alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
-                alt.Tooltip('metric:N', title='指标'),
-                alt.Tooltip('value:Q', title='数值', format=',.0f')
-            ]
-        ).properties(
-            title=title,
-            width='container',
-            height=400
-        ).configure_axis(
-            gridColor='#f0f0f0'
-        ).configure_view(
-            strokeWidth=0
-        )
+        # 创建其他指标图表
+        if other_metrics:
+            other_data = []
+            for _, row in df.iterrows():
+                for metric in other_metrics:
+                    other_data.append({
+                        'date': row['date'],
+                        'metric': metric.replace('_', ' ').title(),
+                        'value': row[metric]
+                    })
+            
+            other_df = pd.DataFrame(other_data)
+            
+            # 计算其他指标数据范围
+            other_values = other_df['value'].dropna()
+            if not other_values.empty:
+                min_value = other_values.min()
+                max_value = other_values.max()
+                if min_value != max_value:
+                    data_range = max_value - min_value
+                    y_min = max(0, min_value - data_range * 0.05)
+                    y_max = max_value + data_range * 0.05
+                else:
+                    y_min = max(0, min_value * 0.95)
+                    y_max = max_value * 1.05
+            else:
+                y_min = 0
+                y_max = 100
+            
+            other_chart = alt.Chart(other_df).mark_line(
+                point=True,
+                strokeWidth=2
+            ).encode(
+                x=alt.X('date:T', title='日期', axis=alt.Axis(format='%Y-%m-%d')),
+                y=alt.Y('value:Q', 
+                       title='其他指标数值',
+                       scale=alt.Scale(domain=[y_min, y_max], zero=False)),
+                color=alt.Color('metric:N', title='指标', scale=alt.Scale(scheme='category10')),
+                tooltip=[
+                    alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
+                    alt.Tooltip('metric:N', title='指标'),
+                    alt.Tooltip('value:Q', title='数值', format=',.0f')
+                ]
+            ).properties(
+                title=f"{title} - 互动指标（点赞、评论、分享）",
+                width='container',
+                height=300
+            ).configure_axis(
+                gridColor='#f0f0f0'
+            ).configure_view(
+                strokeWidth=0
+            )
+        else:
+            other_chart = None
         
-        return chart
+        # 如果两个图表都存在，垂直组合
+        if view_chart and other_chart:
+            combined_chart = alt.vconcat(view_chart, other_chart, spacing=20)
+            return combined_chart
+        elif view_chart:
+            return view_chart
+        elif other_chart:
+            return other_chart
+        else:
+            return alt.Chart(pd.DataFrame()).mark_text(text="无数据").properties(title=title)
     
     def create_summary_cards(self, summary_data: Dict) -> str:
         """
