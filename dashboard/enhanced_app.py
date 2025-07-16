@@ -396,6 +396,16 @@ if 'group_mapping' not in st.session_state:
 if 'clicks_df' not in st.session_state:
     st.session_state.clicks_df = None
 
+# 调试 session_state 状态
+st.write("[DEBUG] === Session State 调试信息 ===")
+st.write(f"[DEBUG] st.session_state.merge_successful: {st.session_state.merge_successful}")
+st.write(f"[DEBUG] st.session_state.merged_df 是否为 None: {st.session_state.merged_df is None}")
+st.write(f"[DEBUG] st.session_state.group_mapping 是否为 None: {st.session_state.group_mapping is None}")
+st.write(f"[DEBUG] st.session_state.clicks_df 是否为 None: {st.session_state.clicks_df is None}")
+if st.session_state.merged_df is not None:
+    st.write(f"[DEBUG] st.session_state.merged_df shape: {st.session_state.merged_df.shape}")
+st.write("[DEBUG] === Session State 调试信息结束 ===")
+
 # 初始化数据处理器
 try:
     processor = EnhancedTikTokDataProcessor(
@@ -409,6 +419,11 @@ except Exception as e:
     st.stop()
 
 # 检查是否之前已经成功合并
+st.write("[DEBUG] 检查 session_state 条件...")
+st.write(f"[DEBUG] st.session_state.merge_successful: {st.session_state.merge_successful}")
+st.write(f"[DEBUG] st.session_state.merged_df is not None: {st.session_state.merged_df is not None}")
+st.write(f"[DEBUG] 条件结果: {st.session_state.merge_successful and st.session_state.merged_df is not None}")
+
 if st.session_state.merge_successful and st.session_state.merged_df is not None:
     st.success("✅ 使用之前成功合并的数据")
     processor.merged_df = st.session_state.merged_df
