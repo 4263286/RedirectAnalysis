@@ -311,8 +311,15 @@ except Exception as e:
 
 # 合并数据
 try:
-    processor.merge_data()
+    st.write("[DEBUG] 开始调用 merge_data()...")
+    merge_result = processor.merge_data()
+    st.write(f"[DEBUG] merge_data() 返回值: {merge_result}")
     st.write(f"[DEBUG] merge_data() 完成，merged_df shape: {processor.merged_df.shape if processor.merged_df is not None else 'None'}")
+    
+    if not merge_result:
+        st.error("❌ merge_data() 返回 False，合并失败")
+        st.stop()
+        
 except Exception as e:
     st.error(f"❌ 数据合并失败: {e}")
     st.stop()

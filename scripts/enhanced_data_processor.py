@@ -165,32 +165,42 @@ class EnhancedTikTokDataProcessor:
         """合并所有数据"""
         try:
             print("正在合并数据...")
+            import streamlit as st
+            st.write("[DEBUG] 正在合并数据...")
             
             # 优先用传入的 DataFrame
             redash_df = self.redash_df if self.redash_df is not None else self.load_latest_redash_data()
             print(f"[DEBUG] redash_df shape: {redash_df.shape if redash_df is not None else 'None'}")
+            st.write(f"[DEBUG] redash_df shape: {redash_df.shape if redash_df is not None else 'None'}")
             
             group_mapping = None
             if self.accounts_df is not None:
                 print(f"[DEBUG] 使用传入的 accounts_df, shape: {self.accounts_df.shape}")
+                st.write(f"[DEBUG] 使用传入的 accounts_df, shape: {self.accounts_df.shape}")
                 accounts_df = self.accounts_df
                 print(f"[DEBUG] accounts_df columns: {accounts_df.columns.tolist()}")
+                st.write(f"[DEBUG] accounts_df columns: {accounts_df.columns.tolist()}")
                 # 检查必要的列是否存在
                 if 'Tiktok ID' not in accounts_df.columns or 'Groups' not in accounts_df.columns:
                     print(f"[DEBUG] accounts_df columns: {accounts_df.columns.tolist()}")
+                    st.error(f"[DEBUG] accounts_df columns: {accounts_df.columns.tolist()}")
                     raise ValueError("accounts_df 缺少必要的列: 'Tiktok ID' 或 'Groups'")
                 # 强制类型转换
                 accounts_df['Tiktok ID'] = accounts_df['Tiktok ID'].astype(str)
                 print(f"[DEBUG] accounts_df['Tiktok ID'] dtype: {accounts_df['Tiktok ID'].dtype}")
+                st.write(f"[DEBUG] accounts_df['Tiktok ID'] dtype: {accounts_df['Tiktok ID'].dtype}")
                 print(f"[DEBUG] accounts_df['Tiktok ID'] sample: {accounts_df['Tiktok ID'].unique()[:5]}")
+                st.write(f"[DEBUG] accounts_df['Tiktok ID'] sample: {accounts_df['Tiktok ID'].unique()[:5]}")
                 group_mapping = accounts_df[['Tiktok ID', 'Groups']].drop_duplicates()
                 group_mapping = group_mapping.rename(columns={'Tiktok ID': 'user_id', 'Groups': 'group'})
                 group_mapping['user_id'] = group_mapping['user_id'].astype(str)
                 group_mapping['group'] = group_mapping['group'].fillna('Unknown')
                 print(f"[DEBUG] group_mapping shape: {group_mapping.shape}")
+                st.write(f"[DEBUG] group_mapping shape: {group_mapping.shape}")
             else:
                 group_mapping = self.load_accounts_data()
                 print(f"[DEBUG] 从文件加载 group_mapping, shape: {group_mapping.shape if group_mapping is not None else 'None'}")
+                st.write(f"[DEBUG] 从文件加载 group_mapping, shape: {group_mapping.shape if group_mapping is not None else 'None'}")
             
             clicks_df = self.clicks_df if self.clicks_df is not None else self.load_clicks_data()
             print(f"[DEBUG] clicks_df shape: {clicks_df.shape if clicks_df is not None else 'None'}")
@@ -213,21 +223,31 @@ class EnhancedTikTokDataProcessor:
                 return False
             
             print(f"[DEBUG] 开始合并，redash_df columns: {redash_df.columns.tolist()}")
+            st.write(f"[DEBUG] 开始合并，redash_df columns: {redash_df.columns.tolist()}")
             print(f"[DEBUG] group_mapping columns: {group_mapping.columns.tolist()}")
+            st.write(f"[DEBUG] group_mapping columns: {group_mapping.columns.tolist()}")
             # 强制类型转换
             if 'user_id' in redash_df.columns:
                 redash_df['user_id'] = redash_df['user_id'].astype(str)
                 print(f"[DEBUG] redash_df['user_id'] dtype: {redash_df['user_id'].dtype}")
+                st.write(f"[DEBUG] redash_df['user_id'] dtype: {redash_df['user_id'].dtype}")
                 print(f"[DEBUG] redash_df['user_id'] sample: {redash_df['user_id'].unique()[:5]}")
+                st.write(f"[DEBUG] redash_df['user_id'] sample: {redash_df['user_id'].unique()[:5]}")
             else:
                 print("[DEBUG] redash_df 缺少 'user_id' 列，实际列: ", redash_df.columns.tolist())
+                st.error("[DEBUG] redash_df 缺少 'user_id' 列，实际列: " + str(redash_df.columns.tolist()))
                 raise ValueError("redash_df 缺少 'user_id' 列")
             
             # 合并 redash 和 accounts 数据
+            st.write("[DEBUG] 开始执行 merge 操作...")
             merged_df = redash_df.merge(group_mapping, on='user_id', how='left')
             print(f"[DEBUG] 合并后 shape: {merged_df.shape}")
+            st.write(f"[DEBUG] 合并后 shape: {merged_df.shape}")
             print(f"[DEBUG] merged_df['group'] value_counts: {merged_df['group'].value_counts(dropna=False) if 'group' in merged_df.columns else '无group列'}")
+            st.write(f"[DEBUG] merged_df['group'] value_counts: {merged_df['group'].value_counts(dropna=False) if 'group' in merged_df.columns else '无group列'}")
             print(f"[DEBUG] merged_df head:\n{merged_df.head()}")
+            st.write(f"[DEBUG] merged_df head:")
+            st.dataframe(merged_df.head())
             
             # 强制统一分组字段名为 group
             if 'Groups' in merged_df.columns:
@@ -239,10 +259,12 @@ class EnhancedTikTokDataProcessor:
             self.clicks_df = clicks_df
             
             print(f"✅ 数据合并成功: {merged_df.shape}")
+            st.success(f"✅ 数据合并成功: {merged_df.shape}")
             return True
             
         except Exception as e:
             print(f"❌ 数据合并失败: {str(e)}")
+            st.error(f"❌ 数据合并失败: {str(e)}")
             self.merged_df = None
             return False
     
