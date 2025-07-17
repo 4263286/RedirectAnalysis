@@ -197,7 +197,7 @@ class EnhancedVisualization:
             var_name='type',
             value_name='value'
         )
-        chart_data['type'] = chart_data['type'].map({
+        chart_data['type'] = chart_data['type'].replace({
             'daily_clicks': '点击量(PV)',
             'daily_visitors': '访客数(UV)'
         })
@@ -317,9 +317,9 @@ class EnhancedVisualization:
     
     def create_multi_metric_comparison(self, df: pd.DataFrame,
                                      metrics: List[str],
-                                     title: str) -> Union[alt.Chart, alt.VConcatChart]:
+                                     title: str) -> Union[alt.Chart, alt.VConcatChart, alt.HConcatChart]:
         """
-        创建多指标对比图 - 将浏览量和其他指标分开展示
+        创建多指标对比图 - 将浏览量、点赞数和其他指标分开展示
         
         Args:
             df (pd.DataFrame): 数据框
@@ -332,9 +332,12 @@ class EnhancedVisualization:
         if df.empty:
             return alt.Chart(pd.DataFrame()).mark_text(text="无数据").properties(title=title)
         
-        # 分离浏览量和其他指标
+        # 分离浏览量、点赞数和其他指标
         view_metrics = [m for m in metrics if 'view' in m.lower()]
-        other_metrics = [m for m in metrics if 'view' not in m.lower()]
+        like_metrics = [m for m in metrics if 'like' in m.lower()]
+        other_metrics = [m for m in metrics if 'view' not in m.lower() and 'like' not in m.lower()]
+        
+        charts = []
         
         # 创建浏览量图表
         if view_metrics:
@@ -381,11 +384,60 @@ class EnhancedVisualization:
                 ]
             ).properties(
                 title=f"{title} - 浏览量指标",
-                width='container',
+                width=400,
                 height=300
             )
-        else:
-            view_chart = None
+            charts.append(view_chart)
+        
+        # 创建点赞数图表
+        if like_metrics:
+            like_data = []
+            for _, row in df.iterrows():
+                for metric in like_metrics:
+                    like_data.append({
+                        'date': row['date'],
+                        'metric': metric.replace('_', ' ').title(),
+                        'value': row[metric]
+                    })
+            
+            like_df = pd.DataFrame(like_data)
+            
+            # 计算点赞数数据范围
+            like_values = like_df['value'].dropna()
+            if not like_values.empty:
+                min_value = like_values.min()
+                max_value = like_values.max()
+                if min_value != max_value:
+                    data_range = max_value - min_value
+                    y_min = max(0, min_value - data_range * 0.05)
+                    y_max = max_value + data_range * 0.05
+                else:
+                    y_min = max(0, min_value * 0.95)
+                    y_max = max_value * 1.05
+            else:
+                y_min = 0
+                y_max = 100
+            
+            like_chart = alt.Chart(like_df).mark_line(
+                point=True,
+                strokeWidth=2
+            ).encode(
+                x=alt.X('date:T', title='日期', axis=alt.Axis(format='%Y-%m-%d')),
+                y=alt.Y('value:Q', 
+                       title='点赞数',
+                       scale=alt.Scale(domain=[y_min, y_max], zero=False)),
+                color=alt.Color('metric:N', title='指标', scale=alt.Scale(scheme='category10')),
+                tooltip=[
+                    alt.Tooltip('date:T', title='日期', format='%Y-%m-%d'),
+                    alt.Tooltip('metric:N', title='指标'),
+                    alt.Tooltip('value:Q', title='数值', format=',.0f')
+                ]
+            ).properties(
+                title=f"{title} - 点赞数指标",
+                width=400,
+                height=300
+            )
+            charts.append(like_chart)
         
         # 创建其他指标图表
         if other_metrics:
@@ -431,35 +483,35 @@ class EnhancedVisualization:
                     alt.Tooltip('value:Q', title='数值', format=',.0f')
                 ]
             ).properties(
-                title=f"{title} - 互动指标（点赞、评论、分享）",
-                width='container',
+                title=f"{title} - 互动指标（评论、分享）",
+                width=400,
                 height=300
             )
-        else:
-            other_chart = None
+            charts.append(other_chart)
         
-        # 如果两个图表都存在，垂直组合
-        if view_chart and other_chart:
-            combined_chart = alt.vconcat(view_chart, other_chart, spacing=20).configure_axis(
-                gridColor='#f0f0f0'
-            ).configure_view(
-                strokeWidth=0
-            )
-            return combined_chart
-        elif view_chart:
-            return view_chart.configure_axis(
-                gridColor='#f0f0f0'
-            ).configure_view(
-                strokeWidth=0
-            )
-        elif other_chart:
-            return other_chart.configure_axis(
-                gridColor='#f0f0f0'
-            ).configure_view(
-                strokeWidth=0
-            )
-        else:
+        # 创建布局：一行放两个图表，放不下的单独一行
+        if len(charts) == 0:
             return alt.Chart(pd.DataFrame()).mark_text(text="无数据").properties(title=title)
+        elif len(charts) == 1:
+            return charts[0]
+        else:
+            # 将图表分组，每行最多两个
+            rows = []
+            for i in range(0, len(charts), 2):
+                row_charts = charts[i:i+2]
+                if len(row_charts) == 1:
+                    # 单独一个图表，直接使用
+                    row = row_charts[0]
+                else:
+                    # 两个图表水平排列
+                    row = alt.hconcat(*row_charts, spacing=20)
+                rows.append(row)
+            
+            # 垂直组合所有行
+            if len(rows) == 1:
+                return rows[0]
+            else:
+                return alt.vconcat(*rows, spacing=30)
     
     def create_summary_cards(self, summary_data: Dict) -> str:
         """

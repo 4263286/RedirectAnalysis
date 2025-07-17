@@ -684,12 +684,21 @@ with tab1:
 
         # 多指标对比图
         st.markdown("### 📈 多指标对比")
-        metrics_comparison = viz.create_multi_metric_comparison(
-            daily_metrics,
-            ['view_count', 'like_count', 'comment_count', 'share_count'],
-            "每日指标对比"
-        )
-        st.altair_chart(metrics_comparison, use_container_width=True)
+        required_columns = ['view_count', 'like_count', 'comment_count', 'share_count']
+        if daily_metrics is not None and not daily_metrics.empty:
+            missing_columns = [col for col in required_columns if col not in daily_metrics.columns]
+            if missing_columns:
+                st.warning(f"缺少必要的列: {missing_columns}")
+                st.write("可用的列:", list(daily_metrics.columns))
+            else:
+                metrics_comparison = viz.create_multi_metric_comparison(
+                    daily_metrics,
+                    required_columns,
+                    "每日指标对比"
+                )
+                st.altair_chart(metrics_comparison, use_container_width=True)
+        else:
+            st.warning("daily_metrics 数据为空或不存在")
 
     # 表现最好账号Top 5板块
     st.markdown("### 📊 表现最好账号 Top 5（按最后一天新增浏览量）")
