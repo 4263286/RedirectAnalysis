@@ -407,6 +407,40 @@ if st.session_state.merged_df is not None:
     st.write(f"[DEBUG] st.session_state.merged_df shape: {st.session_state.merged_df.shape}")
 st.write("[DEBUG] === Session State 调试信息结束 ===")
 
+# === 自动检测数据文件变化，必要时清空合并结果 ===
+def get_file_mtime(path):
+    return os.path.getmtime(path) if os.path.exists(path) else 0
+
+# 你可以根据实际情况调整这些路径
+file1 = os.path.join(os.path.dirname(__file__), '..', 'data', 'posts_detail.xlsx')
+file2_dir = os.path.join(os.path.dirname(__file__), '..', 'data', 'redash_data')
+file2 = None
+if os.path.exists(file2_dir):
+    redash_files = [f for f in os.listdir(file2_dir) if f.startswith('redash_data_') and f.endswith('.csv')]
+    if redash_files:
+        # 取最新日期的文件
+        def extract_date_from_filename(filename):
+            try:
+                date_str = filename.replace('redash_data_', '').replace('.csv', '')
+                return pd.to_datetime(date_str)
+            except:
+                return pd.to_datetime('1900-01-01')
+        latest_file = max(redash_files, key=extract_date_from_filename)
+        file2 = os.path.join(file2_dir, latest_file)
+
+current_mtime = (get_file_mtime(file1), get_file_mtime(file2) if file2 else 0)
+
+if "last_mtime" not in st.session_state or st.session_state["last_mtime"] != current_mtime:
+    st.session_state.pop("merged_df", None)
+    st.session_state.pop("merge_successful", None)
+    st.session_state["last_mtime"] = current_mtime
+
+# === 页面顶部添加强制刷新按钮 ===
+if st.button("强制刷新数据（重新合并）"):
+    st.session_state.pop("merged_df", None)
+    st.session_state.pop("merge_successful", None)
+    st.experimental_rerun()
+
 # 初始化数据处理器
 try:
     processor = EnhancedTikTokDataProcessor(
