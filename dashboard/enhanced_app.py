@@ -399,12 +399,12 @@ if 'clicks_df' not in st.session_state:
 
 # 调试 session_state 状态
 st.write("[DEBUG] === Session State 调试信息 ===")
-st.write(f"[DEBUG] st.session_state.merge_successful: {st.session_state.merge_successful}")
-st.write(f"[DEBUG] st.session_state.merged_df 是否为 None: {st.session_state.merged_df is None}")
-st.write(f"[DEBUG] st.session_state.group_mapping 是否为 None: {st.session_state.group_mapping is None}")
-st.write(f"[DEBUG] st.session_state.clicks_df 是否为 None: {st.session_state.clicks_df is None}")
-if st.session_state.merged_df is not None:
-    st.write(f"[DEBUG] st.session_state.merged_df shape: {st.session_state.merged_df.shape}")
+st.write(f"[DEBUG] st.session_state.merge_successful: {st.session_state.get('merge_successful', False)}")
+st.write(f"[DEBUG] st.session_state.merged_df 是否为 None: {st.session_state.get('merged_df') is None}")
+st.write(f"[DEBUG] st.session_state.group_mapping 是否为 None: {st.session_state.get('group_mapping') is None}")
+st.write(f"[DEBUG] st.session_state.clicks_df 是否为 None: {st.session_state.get('clicks_df') is None}")
+if st.session_state.get('merged_df') is not None:
+    st.write(f"[DEBUG] st.session_state.merged_df shape: {st.session_state.get('merged_df').shape}")
 st.write("[DEBUG] === Session State 调试信息结束 ===")
 
 # === 自动检测数据文件变化，必要时清空合并结果 ===
@@ -455,9 +455,9 @@ except Exception as e:
 
 # 检查是否之前已经成功合并
 st.write("[DEBUG] 检查 session_state 条件...")
-st.write(f"[DEBUG] st.session_state.merge_successful: {st.session_state.merge_successful}")
-st.write(f"[DEBUG] st.session_state.merged_df is not None: {st.session_state.merged_df is not None}")
-st.write(f"[DEBUG] 条件结果: {st.session_state.merge_successful and st.session_state.merged_df is not None}")
+st.write(f"[DEBUG] st.session_state.merge_successful: {st.session_state.get('merge_successful', False)}")
+st.write(f"[DEBUG] st.session_state.merged_df is not None: {st.session_state.get('merged_df') is not None}")
+st.write(f"[DEBUG] 条件结果: {st.session_state.get('merge_successful', False) and st.session_state.get('merged_df') is not None}")
 
 MERGED_PATH = '/tmp/merged_result.parquet'
 GROUP_MAPPING_PATH = '/tmp/group_mapping.pkl'
