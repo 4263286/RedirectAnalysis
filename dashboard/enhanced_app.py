@@ -439,7 +439,7 @@ if "last_mtime" not in st.session_state or st.session_state["last_mtime"] != cur
 if st.button("强制刷新数据（重新合并）"):
     st.session_state.pop("merged_df", None)
     st.session_state.pop("merge_successful", None)
-    st.experimental_rerun()
+    st.rerun()
 
 # 初始化数据处理器
 try:
